@@ -3,6 +3,7 @@ import AppLayout from '../components/layout/AppLayout.jsx'
 import DashboardPage from '../features/dashboard/DashboardPage.jsx'
 import PatientListPage from '../features/patients/PatientListPage.jsx'
 import DoctorListPage from '../features/doctors/DoctorListPage.jsx'
+import DoctorDetailPage from '../features/doctors/DoctorDetailPage.jsx'
 import SpecialtyListPage from '../features/specialties/SpecialtyListPage.jsx'
 import NotFoundPage from '../components/common/NotFoundPage.jsx'
 
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'patients', element: <PatientListPage /> },
       { path: 'doctors', element: <DoctorListPage /> },
+      { path: 'doctors/:doctorId', element: <DoctorDetailPage /> },
       { path: 'specialties', element: <SpecialtyListPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

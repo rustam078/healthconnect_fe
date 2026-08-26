@@ -1,5 +1,6 @@
 import { Button, Popconfirm, Space, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
 import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { formatCurrency } from '../../utils/format.js'
 
@@ -13,7 +14,16 @@ export function getDoctorColumns({ onEdit, onDelete }) {
     {
       title: 'Name',
       key: 'name',
-      render: (_, r) => [r.firstName, r.lastName].filter(Boolean).join(' ') || dash,
+      render: (_, r) => {
+        const name = [r.firstName, r.lastName].filter(Boolean).join(' ')
+        return name ? (
+          <Link to={`/doctors/${r.id}`} style={{ fontWeight: 500 }}>
+            {name}
+          </Link>
+        ) : (
+          dash
+        )
+      },
     },
     {
       title: 'Gender',
