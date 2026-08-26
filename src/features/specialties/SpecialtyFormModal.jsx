@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Modal, Form, Input, App } from 'antd'
 import { useCreateSpecialty, useUpdateSpecialty } from './specialtiesHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
@@ -10,15 +9,6 @@ export default function SpecialtyFormModal({ open, mode, initialValues, onClose 
   const updateMutation = useUpdateSpecialty()
   const isEdit = mode === 'edit'
   const submitting = createMutation.isPending || updateMutation.isPending
-
-  useEffect(() => {
-    if (open) {
-      form.setFieldsValue({
-        name: initialValues?.name ?? '',
-        description: initialValues?.description ?? '',
-      })
-    }
-  }, [open, initialValues, form])
 
   const handleOk = async () => {
     let values
@@ -62,7 +52,16 @@ export default function SpecialtyFormModal({ open, mode, initialValues, onClose 
       onCancel={onClose}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" preserve={false}>
+      <Form
+        key={`${mode}-${initialValues?.id ?? 'new'}`}
+        form={form}
+        layout="vertical"
+        preserve={false}
+        initialValues={{
+          name: initialValues?.name ?? '',
+          description: initialValues?.description ?? '',
+        }}
+      >
         <Form.Item
           name="name"
           label="Name"
