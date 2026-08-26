@@ -2,6 +2,15 @@ import dayjs from 'dayjs'
 
 const JS_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
 
+// Fixed calendar grid: 1-hour slots from 8 AM to 6 PM.
+export const DAY_START = 8
+export const DAY_END = 18
+export const HOURS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i) // [8..17]
+
+// Shared layout constants so the left time axis and doctor columns stay aligned.
+export const ROW_H = 46
+export const HEADER_H = 68
+
 export function dayOfWeekOf(date) {
   return JS_DOW[date.day()]
 }
@@ -20,17 +29,19 @@ export function fmt12(hhmm) {
   const [h, m] = hhmm.split(':').map(Number)
   const ap = h < 12 ? 'AM' : 'PM'
   const hh = ((h + 11) % 12) + 1
-  return `${hh}:${String(m).padStart(2, '0')} ${ap}`
+  return m ? `${hh}:${String(m).padStart(2, '0')} ${ap}` : `${hh} ${ap}`
 }
 
-// Build fixed-length slots for a doctor's availability on a given date.
-// status: 'available' | 'break' | 'past'
-export function generateSlots(avail, date, slotMinutes = 30) {
-  if (!avail) return []
-  const start = toMin(avail.startTime)
-  const end = toMin(avail.endTime)
-  if (start == null || end == null || end <= start) return []
+export const TIME_LABELS = HOURS.map((h) => fmt12(fmt(h * 60)))
 
+// One status per fixed hour slot.
+// off = outside the doctor's working hours, break = during break,
+// booked = already taken, past = time gone today, available = bookable (white)
+export function buildDaySlots(avail, date, bookedStarts = new Set()) {
+  if (!avail) return null // caller shows the "not available" state
+
+  const workStart = toMin(avail.startTime)
+  const workEnd = toMin(avail.endTime)
   const bStart = toMin(avail.breakStartTime)
   const bEnd = toMin(avail.breakEndTime)
 
@@ -39,14 +50,16 @@ export function generateSlots(avail, date, slotMinutes = 30) {
   const isPastDay = date.isBefore(now, 'day')
   const nowMin = now.hour() * 60 + now.minute()
 
-  const slots = []
-  for (let s = start; s + slotMinutes <= end; s += slotMinutes) {
-    const e = s + slotMinutes
-    const inBreak = bStart != null && bEnd != null && s < bEnd && e > bStart
-    let status = 'available'
-    if (inBreak) status = 'break'
+  return HOURS.map((h) => {
+    const s = h * 60
+    const e = s + 60
+    const start = fmt(s)
+    let status
+    if (workStart == null || e <= workStart || s >= workEnd) status = 'off'
+    else if (bStart != null && bEnd != null && s < bEnd && e > bStart) status = 'break'
+    else if (bookedStarts.has(start)) status = 'booked'
     else if (isPastDay || (isToday && s < nowMin)) status = 'past'
-    slots.push({ start: fmt(s), end: fmt(e), status })
-  }
-  return slots
+    else status = 'available'
+    return { start, end: fmt(e), status }
+  })
 }

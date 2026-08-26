@@ -1,24 +1,21 @@
 import { useState } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import {
-  Card,
-  DatePicker,
-  Button,
-  Space,
-  Typography,
-  Alert,
-  Skeleton,
-  Empty,
-} from 'antd'
+import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
-import { dayOfWeekOf } from './slots.js'
+import { dayOfWeekOf, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
 import DoctorDayColumn from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 import { BRAND } from '../../app/theme.js'
+
+const HOVER_CSS = `
+.appt-open .appt-open-hint { opacity: 0; color: #37A06E; transition: opacity .12s; }
+.appt-open:hover { background: #EAF5F0 !important; border-color: #37A06E !important; }
+.appt-open:hover .appt-open-hint { opacity: 1; }
+`
 
 function LegendDot({ label, style }) {
   return (
@@ -26,6 +23,31 @@ function LegendDot({ label, style }) {
       <span style={{ width: 16, height: 16, borderRadius: 4, ...style }} />
       {label}
     </span>
+  )
+}
+
+function TimeAxis() {
+  return (
+    <div style={{ flex: '0 0 60px', width: 60 }}>
+      <div style={{ height: HEADER_H }} />
+      {TIME_LABELS.map((label) => (
+        <div
+          key={label}
+          style={{
+            height: ROW_H,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingRight: 8,
+            fontSize: 11,
+            color: '#8A9793',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -47,12 +69,12 @@ export default function AppointmentsPage() {
   })
 
   const weekday = dayOfWeekOf(date)
-
-  const openBook = (partial) =>
-    setDrawer({ open: true, initial: { ...partial, key: Date.now() } })
+  const openBook = (partial) => setDrawer({ open: true, initial: { ...partial, key: Date.now() } })
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <style>{HOVER_CSS}</style>
+
       <Card>
         <Space
           style={{ width: '100%', justifyContent: 'space-between', marginBottom: 12 }}
@@ -63,9 +85,7 @@ export default function AppointmentsPage() {
             <Typography.Title level={4} style={{ margin: 0 }}>
               Appointments
             </Typography.Title>
-            <Typography.Text type="secondary">
-              {date.format('dddd, DD MMMM YYYY')}
-            </Typography.Text>
+            <Typography.Text type="secondary">{date.format('dddd, DD MMMM YYYY')}</Typography.Text>
           </div>
           <Space wrap>
             <DatePicker
@@ -75,36 +95,23 @@ export default function AppointmentsPage() {
               format="DD MMM YYYY"
               disabledDate={(d) => d && d < dayjs().startOf('day')}
             />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openBook({ appointmentDate: date })}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openBook({ appointmentDate: date })}>
               Add appointment
             </Button>
           </Space>
         </Space>
 
-        <Space size={20} wrap style={{ marginBottom: 4 }}>
-          <LegendDot
-            label="Available"
-            style={{ background: 'rgba(34,158,102,0.12)', border: '1px solid #37A06E' }}
-          />
-          <LegendDot
-            label="Break"
-            style={{
-              background: 'repeating-linear-gradient(45deg,#C2C7CC,#C2C7CC 5px,#D6DBE0 5px,#D6DBE0 10px)',
-              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.25)',
-            }}
-          />
-          <LegendDot label="Passed" style={{ background: '#F1F3F2', border: '1px solid #E4E8E6' }} />
+        <Space size={20} wrap>
+          <LegendDot label="Available" style={{ background: '#FFFFFF', border: '1px solid #D7E0DC' }} />
+          <LegendDot label="Break" style={{ background: '#DADFE1', border: '1px solid #CBD1D3' }} />
+          <LegendDot label="Booked" style={{ background: 'rgba(34,158,102,0.16)', border: '1px solid #37A06E' }} />
         </Space>
 
         <Alert
           type="info"
           showIcon
           style={{ marginTop: 12 }}
-          message="Already-booked slots aren't marked yet — the appointment listing API is still in progress. Any open slot can be booked."
+          message="Booked slots aren't marked yet — the appointment listing API is still in progress. Any white slot can be booked."
         />
       </Card>
 
@@ -116,29 +123,26 @@ export default function AppointmentsPage() {
         ) : doctors.length === 0 ? (
           <Empty description="No doctors found" />
         ) : (
-          <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 8 }}>
-            {doctors.map((d, i) => {
-              const details = detailsQueries[i]?.data
-              const availability = (details?.availabilityToSave ?? []).find(
-                (a) => a.dayOfWeek === weekday,
-              )
-              return (
-                <DoctorDayColumn
-                  key={d.id}
-                  doctor={d}
-                  availability={availability}
-                  date={date}
-                  loading={detailsQueries[i]?.isLoading}
-                  onPick={(slot) =>
-                    openBook({
-                      doctorId: d.id,
-                      appointmentDate: date,
-                      startTime: slot.start,
-                    })
-                  }
-                />
-              )
-            })}
+          <div style={{ display: 'flex' }}>
+            <TimeAxis />
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, flex: 1 }}>
+              {doctors.map((d, i) => {
+                const details = detailsQueries[i]?.data
+                const availability = (details?.availabilityToSave ?? []).find((a) => a.dayOfWeek === weekday)
+                return (
+                  <DoctorDayColumn
+                    key={d.id}
+                    doctor={d}
+                    availability={availability}
+                    date={date}
+                    loading={detailsQueries[i]?.isLoading}
+                    onPick={(slot) =>
+                      openBook({ doctorId: d.id, appointmentDate: date, startTime: slot.start })
+                    }
+                  />
+                )
+              })}
+            </div>
           </div>
         )}
       </Card>
