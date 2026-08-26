@@ -4,33 +4,26 @@ import { formatCurrency } from '../../utils/format.js'
 import { BRAND } from '../../app/theme.js'
 
 const CELL = {
-  available: { background: '#FFFFFF', border: '1px solid #D7E0DC', cursor: 'pointer' },
-  break: {
-    background: '#DADFE1',
-    border: '1px solid #CBD1D3',
-    color: '#5A6169',
+  available: { background: '#FFFFFF', cursor: 'pointer' },
+  break: { background: '#FBEAC6', color: '#8A6A1E', cursor: 'not-allowed' }, // amber = on break
+  booked: { background: 'rgba(34,158,102,0.18)', color: '#1F7A4D', cursor: 'not-allowed' }, // green = booked
+  past: { background: '#E9ECEE', color: '#98A2A6', cursor: 'not-allowed' }, // gray = passed
+  off: {
+    // hatched neutral = outside working hours
+    background: 'repeating-linear-gradient(45deg,#F2F5F4,#F2F5F4 5px,#E8EDEB 5px,#E8EDEB 10px)',
     cursor: 'not-allowed',
   },
-  booked: {
-    background: 'rgba(34,158,102,0.16)',
-    border: '1px solid #37A06E',
-    color: '#1F7A4D',
-    cursor: 'not-allowed',
-  },
-  past: { background: '#FFFFFF', border: '1px solid #E7ECEA', color: '#C2CAC7', cursor: 'not-allowed', opacity: 0.6 },
-  off: { background: '#F6F8F7', border: '1px solid #EEF2F0', cursor: 'not-allowed' },
 }
 
-function Cell({ slot, onPick }) {
+function Cell({ slot, onPick, last }) {
   const base = {
-    height: ROW_H - 6,
-    margin: '3px 6px',
-    borderRadius: 8,
-    fontSize: 11,
-    fontWeight: 600,
+    height: ROW_H,
+    borderBottom: last ? 'none' : '1px solid #EDF1EF',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    fontSize: 11,
+    fontWeight: 600,
     userSelect: 'none',
     ...CELL[slot.status],
   }
@@ -61,16 +54,7 @@ export default function DoctorDayColumn({ doctor, availability, date, loading, o
   const slots = buildDaySlots(availability, date)
 
   return (
-    <div
-      style={{
-        flex: '0 0 168px',
-        width: 168,
-        border: `1px solid ${BRAND.border}`,
-        borderRadius: 12,
-        background: '#fff',
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ flex: '0 0 150px', width: 150, borderRight: `1px solid ${BRAND.border}` }}>
       <div
         style={{
           height: HEADER_H,
@@ -83,7 +67,16 @@ export default function DoctorDayColumn({ doctor, availability, date, loading, o
         <div style={{ fontWeight: 600, color: BRAND.heading, lineHeight: 1.2, fontSize: 13 }}>
           {[doctor.firstName, doctor.lastName].filter(Boolean).join(' ')}
         </div>
-        <div style={{ fontSize: 11, color: '#7C8B87', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: '#7C8B87',
+            marginTop: 2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {doctor.qualification}
         </div>
         <div style={{ fontSize: 11, color: BRAND.primary, marginTop: 1 }}>
@@ -95,8 +88,8 @@ export default function DoctorDayColumn({ doctor, availability, date, loading, o
         <div style={{ padding: 16, fontSize: 12, color: '#9AA7A3', textAlign: 'center' }}>Loading…</div>
       ) : slots ? (
         <div>
-          {slots.map((s) => (
-            <Cell key={s.start} slot={s} onPick={onPick} />
+          {slots.map((s, i) => (
+            <Cell key={s.start} slot={s} onPick={onPick} last={i === slots.length - 1} />
           ))}
         </div>
       ) : (
