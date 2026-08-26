@@ -34,26 +34,33 @@ export function fmt12(hhmm) {
 
 export const TIME_LABELS = HOURS.map((h) => fmt12(fmt(h * 60)))
 
+// A proportional band (minutes from the grid's 8 AM start), clamped to the grid.
+// Used for breaks and for booked appointments so mid-hour spans fill only their
+// real minutes instead of whole hour slots. Returns null if fully off-grid.
+export function bandFromTimes(startTime, endTime) {
+  const s0 = toMin(startTime)
+  const e0 = toMin(endTime)
+  if (s0 == null || e0 == null) return null
+  const s = Math.max(s0, DAY_START * 60)
+  const e = Math.min(e0, DAY_END * 60)
+  if (e <= s) return null
+  return { topMin: s - DAY_START * 60, durMin: e - s }
+}
+
 // Returns { slots, breakBand } or null (caller shows the "not available" state).
-// Each hour slot status: off = outside working hours, booked = already taken,
-// past = time gone today, available = bookable (white).
-// The break is NOT a per-hour status — it's a proportional band (in minutes
-// from the grid's 8 AM start) so a mid-hour break only fills its real minutes.
-export function buildDaySlots(avail, date, bookedStarts = new Set()) {
+// Each hour slot status: off = outside working hours, past = time gone today,
+// available = bookable (white). Break and booked appointments are drawn as
+// proportional bands (see bandFromTimes), not per-hour statuses.
+export function buildDaySlots(avail, date) {
   if (!avail) return null
 
   const workStart = toMin(avail.startTime)
   const workEnd = toMin(avail.endTime)
-  const bStart = toMin(avail.breakStartTime)
-  const bEnd = toMin(avail.breakEndTime)
 
   const now = dayjs()
   const isToday = date.isSame(now, 'day')
   const isPastDay = date.isBefore(now, 'day')
   const nowMin = now.hour() * 60 + now.minute()
-
-  const gridStart = DAY_START * 60
-  const gridEnd = DAY_END * 60
 
   const slots = HOURS.map((h) => {
     const s = h * 60
@@ -61,19 +68,14 @@ export function buildDaySlots(avail, date, bookedStarts = new Set()) {
     const start = fmt(s)
     let status
     if (workStart == null || e <= workStart || s >= workEnd) status = 'off'
-    else if (bookedStarts.has(start)) status = 'booked'
     else if (isPastDay || (isToday && s < nowMin)) status = 'past'
     else status = 'available'
     return { start, end: fmt(e), status }
   })
 
-  let breakBand = null
-  if (bStart != null && bEnd != null && bEnd > bStart) {
-    const s = Math.max(bStart, gridStart)
-    const e = Math.min(bEnd, gridEnd)
-    if (e > s) {
-      breakBand = { topMin: s - gridStart, durMin: e - s, label: `${fmt12(fmt(bStart))} – ${fmt12(fmt(bEnd))}` }
-    }
+  const breakBand = bandFromTimes(avail.breakStartTime, avail.breakEndTime)
+  if (breakBand) {
+    breakBand.label = `${fmt12(avail.breakStartTime.slice(0, 5))} – ${fmt12(avail.breakEndTime.slice(0, 5))}`
   }
 
   return { slots, breakBand }

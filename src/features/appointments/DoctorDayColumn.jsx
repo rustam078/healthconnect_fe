@@ -1,17 +1,23 @@
 import { Tooltip, Empty } from 'antd'
-import { buildDaySlots, ROW_H, HEADER_H } from './slots.js'
+import { buildDaySlots, bandFromTimes, fmt12, ROW_H, HEADER_H } from './slots.js'
 import { formatCurrency } from '../../utils/format.js'
 import { BRAND } from '../../app/theme.js'
 
 const CELL = {
   available: { background: '#FFFFFF', cursor: 'pointer' },
-  booked: { background: 'rgba(34,158,102,0.18)', color: '#1F7A4D', cursor: 'not-allowed' }, // green = booked
   past: { background: '#E9ECEE', color: '#98A2A6', cursor: 'not-allowed' }, // gray = passed
   off: {
     // hatched neutral = outside working hours
     background: 'repeating-linear-gradient(45deg,#F2F5F4,#F2F5F4 5px,#E8EDEB 5px,#E8EDEB 10px)',
     cursor: 'not-allowed',
   },
+}
+
+function endOf(appt) {
+  if (appt.endTime) return appt.endTime
+  const [h, m] = appt.startTime.split(':').map(Number)
+  const tot = h * 60 + m + (appt.durationMinutes || 0)
+  return `${String(Math.floor(tot / 60)).padStart(2, '0')}:${String(tot % 60).padStart(2, '0')}`
 }
 
 function Cell({ slot, onPick, last }) {
@@ -33,21 +39,23 @@ function Cell({ slot, onPick, last }) {
       </div>
     )
   }
-  const label = slot.status === 'booked' ? 'Booked' : ''
-  const tip =
-    slot.status === 'booked'
-      ? 'Already booked'
-      : slot.status === 'past'
-        ? 'Time already passed'
-        : 'Outside working hours'
+  const tip = slot.status === 'past' ? 'Time already passed' : 'Outside working hours'
   return (
     <Tooltip title={tip}>
-      <div style={base}>{label}</div>
+      <div style={base} />
     </Tooltip>
   )
 }
 
-export default function DoctorDayColumn({ doctor, availability, date, loading, onPick }) {
+export default function DoctorDayColumn({
+  doctor,
+  availability,
+  date,
+  loading,
+  appointments = [],
+  onPick,
+  onPickAppointment,
+}) {
   const day = buildDaySlots(availability, date)
 
   return (
@@ -114,6 +122,40 @@ export default function DoctorDayColumn({ doctor, availability, date, loading, o
               </div>
             </Tooltip>
           )}
+
+          {appointments.map((appt) => {
+            const band = bandFromTimes(appt.startTime, endOf(appt))
+            if (!band) return null
+            const range = `${fmt12(appt.startTime.slice(0, 5))} – ${fmt12(endOf(appt).slice(0, 5))}`
+            return (
+              <Tooltip key={appt.id} title={`Booked — ${range}`}>
+                <div
+                  onClick={() => onPickAppointment(appt)}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: (band.topMin / 60) * ROW_H,
+                    height: (band.durMin / 60) * ROW_H,
+                    background: 'rgba(34,158,102,0.20)',
+                    borderTop: '1px solid #37A06E',
+                    borderBottom: '1px solid #37A06E',
+                    borderLeft: '3px solid #2E8B5E',
+                    color: '#1F7A4D',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 3,
+                  }}
+                >
+                  Booked
+                </div>
+              </Tooltip>
+            )
+          })}
         </div>
       ) : (
         <div style={{ padding: '28px 8px' }}>

@@ -5,13 +5,15 @@ import { PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
+import { getAppointmentsByDoctor } from './appointmentsApi.js'
 import { dayOfWeekOf, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
-
-const isSunday = (d) => d.day() === 0
 import DoctorDayColumn from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
+import AppointmentDetailsDrawer from './AppointmentDetailsDrawer.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 import { BRAND } from '../../app/theme.js'
+
+const isSunday = (d) => d.day() === 0
 
 const HOVER_CSS = `
 .appt-open .appt-open-hint { opacity: 0; color: #37A06E; transition: opacity .12s; }
@@ -75,6 +77,16 @@ export default function AppointmentsPage() {
       queryFn: () => getDoctorDetails(d.id),
     })),
   })
+
+  const dateStr = date.format('YYYY-MM-DD')
+  const apptQueries = useQueries({
+    queries: doctors.map((d) => ({
+      queryKey: ['appointments', d.id, dateStr],
+      queryFn: () => getAppointmentsByDoctor(d.id, dateStr),
+    })),
+  })
+
+  const [details, setDetails] = useState({ open: false, appointment: null, doctor: null })
 
   const weekday = dayOfWeekOf(date)
   const openBook = (partial) => setDrawer({ open: true, initial: { ...partial, key: Date.now() } })
@@ -166,8 +178,12 @@ export default function AppointmentsPage() {
                     availability={availability}
                     date={date}
                     loading={detailsQueries[i]?.isLoading}
+                    appointments={apptQueries[i]?.data?.content ?? []}
                     onPick={(slot) =>
                       openBook({ doctorId: d.id, appointmentDate: date, startTime: slot.start })
+                    }
+                    onPickAppointment={(appt) =>
+                      setDetails({ open: true, appointment: appt, doctor: d })
                     }
                   />
                 )
@@ -180,7 +196,7 @@ export default function AppointmentsPage() {
           type="info"
           showIcon
           style={{ marginTop: 12 }}
-          message="Booked slots aren't marked yet — the appointment listing API is still in progress. Any white slot can be booked."
+          message="Green = booked (click for details). White slots are open — click to book."
         />
       </Card>
 
@@ -189,6 +205,13 @@ export default function AppointmentsPage() {
         initial={drawer.initial}
         doctors={doctors}
         onClose={() => setDrawer((s) => ({ ...s, open: false }))}
+      />
+
+      <AppointmentDetailsDrawer
+        open={details.open}
+        appointment={details.appointment}
+        doctor={details.doctor}
+        onClose={() => setDetails((s) => ({ ...s, open: false }))}
       />
     </>
   )
