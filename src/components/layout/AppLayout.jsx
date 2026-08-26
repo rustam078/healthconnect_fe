@@ -1,69 +1,123 @@
 import { useState } from 'react'
-import { Layout, Menu, theme } from 'antd'
+import { Layout, Menu, Avatar } from 'antd'
 import {
   DashboardOutlined,
   TeamOutlined,
   MedicineBoxOutlined,
   ApartmentOutlined,
   CalendarOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { BRAND } from '../../app/theme.js'
 
 const { Header, Sider, Content } = Layout
 
-const MENU_ITEMS = [
-  { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Dashboard</Link> },
-  { key: '/patients', icon: <TeamOutlined />, label: <Link to="/patients">Patients</Link> },
-  { key: '/doctors', icon: <MedicineBoxOutlined />, label: <Link to="/doctors">Doctors</Link> },
-  { key: '/specialties', icon: <ApartmentOutlined />, label: <Link to="/specialties">Specialties</Link> },
-  { key: '/appointments', icon: <CalendarOutlined />, label: <Link to="/appointments">Appointments</Link> },
+const NAV = [
+  { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+  { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients' },
+  { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, label: 'Doctors' },
+  { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, label: 'Specialties' },
+  { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, label: 'Appointments' },
 ]
+
+const MENU_ITEMS = NAV.map(({ key, icon, label }) => ({
+  key,
+  icon,
+  label: <Link to={key}>{label}</Link>,
+}))
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
-  const { token } = theme.useToken()
 
   const selectedKey =
-    MENU_ITEMS.map((i) => i.key)
+    NAV.map((i) => i.key)
       .filter((k) => k !== '/' && location.pathname.startsWith(k))
       .sort((a, b) => b.length - a.length)[0] || '/'
 
+  const currentTitle = NAV.find((n) => n.key === selectedKey)?.title || 'HealthConnect'
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
+      <Sider
+        width={244}
+        collapsedWidth={76}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+      >
         <div
           style={{
-            height: 48,
-            margin: 16,
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: collapsed ? 14 : 18,
+            height: 64,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            whiteSpace: 'nowrap',
+            gap: 11,
+            padding: collapsed ? 0 : '0 20px',
+            justifyContent: collapsed ? 'center' : 'flex-start',
           }}
         >
-          {collapsed ? 'HC' : 'HealthConnect'}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: `linear-gradient(135deg, ${BRAND.primaryBright}, ${BRAND.primary})`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 17,
+              flex: '0 0 auto',
+            }}
+          >
+            H
+          </div>
+          {!collapsed && (
+            <span style={{ color: '#fff', fontWeight: 600, fontSize: 17, letterSpacing: 0.3 }}>
+              HealthConnect
+            </span>
+          )}
         </div>
-        <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]} items={MENU_ITEMS} />
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={MENU_ITEMS}
+          style={{ borderInlineEnd: 'none', paddingTop: 8 }}
+        />
       </Sider>
+
       <Layout>
         <Header
           style={{
-            background: token.colorBgContainer,
-            padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            borderBottom: `1px solid ${BRAND.border}`,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 600 }}>Admin Console</span>
-          <span style={{ color: token.colorTextSecondary }}>Guest</span>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: BRAND.heading, lineHeight: 1.2 }}>
+              {currentTitle}
+            </div>
+            <div style={{ fontSize: 12, color: '#7C8B87' }}>HealthConnect Admin</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar
+              size={36}
+              style={{ background: '#E6F4F1', color: BRAND.primary }}
+              icon={<UserOutlined />}
+            />
+            <span style={{ color: '#33413E', fontWeight: 500 }}>Guest</span>
+          </div>
         </Header>
-        <Content style={{ margin: 24 }}>
+
+        <Content style={{ padding: '28px 32px' }}>
           <Outlet />
         </Content>
       </Layout>
