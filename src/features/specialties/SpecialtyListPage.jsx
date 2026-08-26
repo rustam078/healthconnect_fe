@@ -4,12 +4,14 @@ import { PlusOutlined } from '@ant-design/icons'
 import { useSpecialties, useDeleteSpecialty } from './specialtiesHooks.js'
 import { getSpecialtyColumns } from './specialtyColumns.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
+import SpecialtyFormModal from './SpecialtyFormModal.jsx'
 
 export default function SpecialtyListPage() {
   const { message } = App.useApp()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(20)
+  const [modal, setModal] = useState({ open: false, mode: 'create', record: null })
 
   const { data, isFetching, isError, error } = useSpecialties({ search, page, size })
   const deleteMutation = useDeleteSpecialty()
@@ -25,7 +27,7 @@ export default function SpecialtyListPage() {
   }
 
   const columns = getSpecialtyColumns({
-    onEdit: () => message.info('Edit form arrives in the next task'),
+    onEdit: (record) => setModal({ open: true, mode: 'edit', record }),
     onDelete: handleDelete,
   })
 
@@ -47,7 +49,11 @@ export default function SpecialtyListPage() {
               setPage(1)
             }}
           />
-          <Button type="primary" icon={<PlusOutlined />} disabled>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setModal({ open: true, mode: 'create', record: null })}
+          >
             Add Specialty
           </Button>
         </Space>
@@ -72,6 +78,13 @@ export default function SpecialtyListPage() {
             setSize(s)
           },
         }}
+      />
+
+      <SpecialtyFormModal
+        open={modal.open}
+        mode={modal.mode}
+        initialValues={modal.record}
+        onClose={() => setModal((m) => ({ ...m, open: false }))}
       />
     </Card>
   )
