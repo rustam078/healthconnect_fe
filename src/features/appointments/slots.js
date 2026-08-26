@@ -34,11 +34,13 @@ export function fmt12(hhmm) {
 
 export const TIME_LABELS = HOURS.map((h) => fmt12(fmt(h * 60)))
 
-// One status per fixed hour slot.
-// off = outside the doctor's working hours, break = during break,
-// booked = already taken, past = time gone today, available = bookable (white)
+// Returns { slots, breakBand } or null (caller shows the "not available" state).
+// Each hour slot status: off = outside working hours, booked = already taken,
+// past = time gone today, available = bookable (white).
+// The break is NOT a per-hour status — it's a proportional band (in minutes
+// from the grid's 8 AM start) so a mid-hour break only fills its real minutes.
 export function buildDaySlots(avail, date, bookedStarts = new Set()) {
-  if (!avail) return null // caller shows the "not available" state
+  if (!avail) return null
 
   const workStart = toMin(avail.startTime)
   const workEnd = toMin(avail.endTime)
@@ -50,16 +52,29 @@ export function buildDaySlots(avail, date, bookedStarts = new Set()) {
   const isPastDay = date.isBefore(now, 'day')
   const nowMin = now.hour() * 60 + now.minute()
 
-  return HOURS.map((h) => {
+  const gridStart = DAY_START * 60
+  const gridEnd = DAY_END * 60
+
+  const slots = HOURS.map((h) => {
     const s = h * 60
     const e = s + 60
     const start = fmt(s)
     let status
     if (workStart == null || e <= workStart || s >= workEnd) status = 'off'
-    else if (bStart != null && bEnd != null && s < bEnd && e > bStart) status = 'break'
     else if (bookedStarts.has(start)) status = 'booked'
     else if (isPastDay || (isToday && s < nowMin)) status = 'past'
     else status = 'available'
     return { start, end: fmt(e), status }
   })
+
+  let breakBand = null
+  if (bStart != null && bEnd != null && bEnd > bStart) {
+    const s = Math.max(bStart, gridStart)
+    const e = Math.min(bEnd, gridEnd)
+    if (e > s) {
+      breakBand = { topMin: s - gridStart, durMin: e - s, label: `${fmt12(fmt(bStart))} – ${fmt12(fmt(bEnd))}` }
+    }
+  }
+
+  return { slots, breakBand }
 }

@@ -5,7 +5,6 @@ import { BRAND } from '../../app/theme.js'
 
 const CELL = {
   available: { background: '#FFFFFF', cursor: 'pointer' },
-  break: { background: '#FBEAC6', color: '#8A6A1E', cursor: 'not-allowed' }, // amber = on break
   booked: { background: 'rgba(34,158,102,0.18)', color: '#1F7A4D', cursor: 'not-allowed' }, // green = booked
   past: { background: '#E9ECEE', color: '#98A2A6', cursor: 'not-allowed' }, // gray = passed
   off: {
@@ -34,15 +33,13 @@ function Cell({ slot, onPick, last }) {
       </div>
     )
   }
-  const label = slot.status === 'break' ? 'Break' : slot.status === 'booked' ? 'Booked' : ''
+  const label = slot.status === 'booked' ? 'Booked' : ''
   const tip =
-    slot.status === 'break'
-      ? 'Break — not bookable'
-      : slot.status === 'booked'
-        ? 'Already booked'
-        : slot.status === 'past'
-          ? 'Time already passed'
-          : 'Outside working hours'
+    slot.status === 'booked'
+      ? 'Already booked'
+      : slot.status === 'past'
+        ? 'Time already passed'
+        : 'Outside working hours'
   return (
     <Tooltip title={tip}>
       <div style={base}>{label}</div>
@@ -51,7 +48,7 @@ function Cell({ slot, onPick, last }) {
 }
 
 export default function DoctorDayColumn({ doctor, availability, date, loading, onPick }) {
-  const slots = buildDaySlots(availability, date)
+  const day = buildDaySlots(availability, date)
 
   return (
     <div style={{ flex: '0 0 150px', width: 150, borderRight: `1px solid ${BRAND.border}` }}>
@@ -86,11 +83,37 @@ export default function DoctorDayColumn({ doctor, availability, date, loading, o
 
       {loading ? (
         <div style={{ padding: 16, fontSize: 12, color: '#9AA7A3', textAlign: 'center' }}>Loading…</div>
-      ) : slots ? (
-        <div>
-          {slots.map((s, i) => (
-            <Cell key={s.start} slot={s} onPick={onPick} last={i === slots.length - 1} />
+      ) : day ? (
+        <div style={{ position: 'relative' }}>
+          {day.slots.map((s, i) => (
+            <Cell key={s.start} slot={s} onPick={onPick} last={i === day.slots.length - 1} />
           ))}
+          {day.breakBand && (
+            <Tooltip title={`Break — ${day.breakBand.label}`}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: (day.breakBand.topMin / 60) * ROW_H,
+                  height: (day.breakBand.durMin / 60) * ROW_H,
+                  background: '#FBEAC6',
+                  borderTop: '1px solid #E9CE93',
+                  borderBottom: '1px solid #E9CE93',
+                  color: '#8A6A1E',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'not-allowed',
+                  zIndex: 2,
+                }}
+              >
+                Break
+              </div>
+            </Tooltip>
+          )}
         </div>
       ) : (
         <div style={{ padding: '28px 8px' }}>
