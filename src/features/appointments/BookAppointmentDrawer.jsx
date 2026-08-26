@@ -119,7 +119,7 @@ export default function BookAppointmentDrawer({ open, initial, doctors, onClose 
           <DatePicker
             style={{ width: '100%' }}
             format="DD MMM YYYY"
-            disabledDate={(d) => d && d < dayjs().startOf('day')}
+            disabledDate={(d) => d && (d < dayjs().startOf('day') || d.day() === 0)}
           />
         </Form.Item>
 

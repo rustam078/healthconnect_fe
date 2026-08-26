@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty, Input, Select } from 'antd'
+import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty, Input } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
-import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { dayOfWeekOf, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
+
+const isSunday = (d) => d.day() === 0
 import DoctorDayColumn from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
@@ -54,15 +55,17 @@ function TimeAxis() {
 }
 
 export default function AppointmentsPage() {
-  const [date, setDate] = useState(dayjs())
+  const [date, setDate] = useState(() => {
+    const t = dayjs()
+    return isSunday(t) ? t.add(1, 'day') : t // Sunday is a holiday — start on Monday
+  })
   const [drawer, setDrawer] = useState({ open: false, initial: null })
   const [search, setSearch] = useState('')
-  const [gender, setGender] = useState()
   const [qualification, setQualification] = useState('')
 
   const doctorsQuery = useQuery({
-    queryKey: ['appt-doctors', { search, gender, qualification }],
-    queryFn: () => getDoctors({ search, filter: { gender, qualification }, page: 0, size: 100 }),
+    queryKey: ['appt-doctors', { search, qualification }],
+    queryFn: () => getDoctors({ search, filter: { qualification }, page: 0, size: 100 }),
   })
   const doctors = doctorsQuery.data?.content ?? []
 
@@ -89,52 +92,40 @@ export default function AppointmentsPage() {
             <Typography.Title level={4} style={{ margin: 0 }}>
               Appointments
             </Typography.Title>
-            <Typography.Text type="secondary">{date.format('dddd, DD MMMM YYYY')}</Typography.Text>
+            <Typography.Text type="secondary">
+              {date.format('dddd, DD MMMM YYYY')} · {doctors.length} doctor{doctors.length === 1 ? '' : 's'}
+            </Typography.Text>
           </div>
           <Space wrap>
+            <Input.Search
+              allowClear
+              placeholder="Search doctor"
+              style={{ width: 200 }}
+              onSearch={setSearch}
+              onChange={(e) => {
+                if (!e.target.value) setSearch('')
+              }}
+            />
+            <Input.Search
+              allowClear
+              placeholder="Specialty / qualification"
+              style={{ width: 200 }}
+              onSearch={setQualification}
+              onChange={(e) => {
+                if (!e.target.value) setQualification('')
+              }}
+            />
             <DatePicker
               value={date}
               onChange={(d) => d && setDate(d)}
               allowClear={false}
               format="DD MMM YYYY"
-              disabledDate={(d) => d && d < dayjs().startOf('day')}
+              disabledDate={(d) => d && (d < dayjs().startOf('day') || isSunday(d))}
             />
             <Button type="primary" icon={<PlusOutlined />} onClick={() => openBook({ appointmentDate: date })}>
               Add appointment
             </Button>
           </Space>
-        </Space>
-
-        <Space wrap style={{ marginBottom: 12 }}>
-          <Input.Search
-            allowClear
-            placeholder="Search doctor — name, phone, email, code"
-            style={{ width: 280 }}
-            onSearch={setSearch}
-            onChange={(e) => {
-              if (!e.target.value) setSearch('')
-            }}
-          />
-          <Select
-            allowClear
-            placeholder="Gender"
-            style={{ width: 130 }}
-            options={GENDER_OPTIONS}
-            value={gender}
-            onChange={setGender}
-          />
-          <Input.Search
-            allowClear
-            placeholder="Specialty / qualification"
-            style={{ width: 210 }}
-            onSearch={setQualification}
-            onChange={(e) => {
-              if (!e.target.value) setQualification('')
-            }}
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {doctors.length} doctor{doctors.length === 1 ? '' : 's'}
-          </Typography.Text>
         </Space>
 
         <Space size={18} wrap style={{ marginBottom: 12 }}>
