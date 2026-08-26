@@ -24,3 +24,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Superpowers SDD scratch (briefs, reports, review diffs) — kept locally, not in history
+.superpowers/
+.claude/
