@@ -51,7 +51,14 @@ export default function BookAppointmentDrawer({ open, initial, doctors, onClose 
         message.success('Appointment booked')
         onClose()
       },
-      onError: (e) => message.error(getErrorMessage(e)),
+      onError: (e) => {
+        if (e?.fieldErrors) {
+          form.setFields(
+            Object.entries(e.fieldErrors).map(([name, msg]) => ({ name, errors: [msg] })),
+          )
+        }
+        message.error(getErrorMessage(e))
+      },
     })
   }
 
