@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty } from 'antd'
+import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty, Input, Select } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
+import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { dayOfWeekOf, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
 import DoctorDayColumn from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
@@ -55,10 +56,13 @@ function TimeAxis() {
 export default function AppointmentsPage() {
   const [date, setDate] = useState(dayjs())
   const [drawer, setDrawer] = useState({ open: false, initial: null })
+  const [search, setSearch] = useState('')
+  const [gender, setGender] = useState()
+  const [qualification, setQualification] = useState('')
 
   const doctorsQuery = useQuery({
-    queryKey: ['appt-doctors'],
-    queryFn: () => getDoctors({ page: 0, size: 100 }),
+    queryKey: ['appt-doctors', { search, gender, qualification }],
+    queryFn: () => getDoctors({ search, filter: { gender, qualification }, page: 0, size: 100 }),
   })
   const doctors = doctorsQuery.data?.content ?? []
 
@@ -101,6 +105,38 @@ export default function AppointmentsPage() {
           </Space>
         </Space>
 
+        <Space wrap style={{ marginBottom: 12 }}>
+          <Input.Search
+            allowClear
+            placeholder="Search doctor — name, phone, email, code"
+            style={{ width: 280 }}
+            onSearch={setSearch}
+            onChange={(e) => {
+              if (!e.target.value) setSearch('')
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="Gender"
+            style={{ width: 130 }}
+            options={GENDER_OPTIONS}
+            value={gender}
+            onChange={setGender}
+          />
+          <Input.Search
+            allowClear
+            placeholder="Specialty / qualification"
+            style={{ width: 210 }}
+            onSearch={setQualification}
+            onChange={(e) => {
+              if (!e.target.value) setQualification('')
+            }}
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {doctors.length} doctor{doctors.length === 1 ? '' : 's'}
+          </Typography.Text>
+        </Space>
+
         <Space size={18} wrap style={{ marginBottom: 12 }}>
           <LegendDot label="Available" style={{ background: '#FFFFFF', border: '1px solid #D7E0DC' }} />
           <LegendDot label="Break" style={{ background: '#FBEAC6', border: '1px solid #E9CE93' }} />
@@ -117,7 +153,7 @@ export default function AppointmentsPage() {
         ) : doctorsQuery.isError ? (
           <Typography.Text type="danger">{getErrorMessage(doctorsQuery.error)}</Typography.Text>
         ) : doctors.length === 0 ? (
-          <Empty description="No doctors found" />
+          <Empty description="No doctors match your search / filters" />
         ) : (
           <div
             style={{
