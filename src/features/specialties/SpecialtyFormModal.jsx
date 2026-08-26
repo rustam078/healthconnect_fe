@@ -67,7 +67,7 @@ export default function SpecialtyFormModal({ open, mode, initialValues, onClose 
           name="name"
           label="Name"
           rules={[
-            { required: true, message: 'Name is required' },
+            { required: true, whitespace: true, message: 'Name is required' },
             { max: 100, message: 'Name must not exceed 100 characters' },
           ]}
         >

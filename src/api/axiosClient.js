@@ -16,8 +16,8 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => {
     const body = response.data
-    if (body && typeof body === 'object' && 'data' in body && 'success' in body) {
-      return body.data
+    if (body && typeof body === 'object' && typeof body.success === 'boolean') {
+      return body.data ?? null
     }
     return body
   },
@@ -30,7 +30,8 @@ axiosClient.interceptors.response.use(
       'Request failed'
     const wrapped = new Error(message)
     wrapped.status = error.response?.status
-    wrapped.errors = body?.errors
+    wrapped.fieldErrors = body?.fieldErrors
+    wrapped.errors = body?.errors ?? (body?.fieldErrors ? Object.values(body.fieldErrors) : undefined)
     return Promise.reject(wrapped)
   },
 )
