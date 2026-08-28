@@ -107,3 +107,116 @@ export function buildDaySlots(avail, date) {
 
   return { slots, breakBand, elapsedBand }
 }
+
+// The stretches of a date when a doctor is free: working hours, minus the break, minus
+// every appointment already in the book. Cancelled ones have handed their time back, so
+// they block nothing.
+//
+// Returned in order, e.g. for 8-6 with a 1-2 break and a 9:00-9:45 booking:
+//   08:00-09:00, 09:45-13:00, 14:00-18:00
+export function buildFreeWindows({ availability, appointments = [] }) {
+  if (!availability) return []
+
+  const dayStart = toMin(availability.startTime)
+  const dayEnd = toMin(availability.endTime)
+  if (dayStart == null || dayEnd == null || dayEnd <= dayStart) return []
+
+  const blocks = []
+  const breakStart = toMin(availability.breakStartTime)
+  const breakEnd = toMin(availability.breakEndTime)
+  if (breakStart != null && breakEnd != null && breakEnd > breakStart) {
+    blocks.push({ from: breakStart, to: breakEnd })
+  }
+  appointments
+    .filter((a) => a.status !== 'CANCELLED' && a.startTime && a.endTime)
+    .forEach((a) =>
+      blocks.push({ from: toMin(a.startTime.slice(0, 5)), to: toMin(a.endTime.slice(0, 5)) }),
+    )
+  blocks.sort((x, y) => x.from - y.from)
+
+  // Walk the day, taking whatever lies between one block and the next. Sorting first is
+  // what lets a single cursor do this: blocks that overlap or sit inside another simply
+  // push the cursor further along instead of opening a phantom gap behind it.
+  const windows = []
+  let cursor = dayStart
+  for (const block of blocks) {
+    if (block.to <= cursor) continue
+    if (block.from > cursor) windows.push({ from: cursor, to: Math.min(block.from, dayEnd) })
+    cursor = Math.max(cursor, block.to)
+    if (cursor >= dayEnd) break
+  }
+  if (cursor < dayEnd) windows.push({ from: cursor, to: dayEnd })
+
+  return windows.filter((w) => w.to > w.from)
+}
+
+// The doctor's whole working day, in order: the stretches you can book, and the stretches
+// you cannot, with the reason.
+//
+// Showing what is taken rather than quietly leaving it out is the point. A list that jumps
+// from 8:30 to 9:45 makes you wonder whether the gap is a bug; a list that says "9 - 9:45,
+// booked" answers the question and shows how busy the day is.
+//
+// Free stretches are cut into slots from their own start, not from a grid pinned to the top
+// of the day - that is what makes the minutes after an appointment usable, offering 9:45
+// rather than skipping to 10:00.
+export function buildDaySegments({ availability, appointments = [], date, durationMinutes }) {
+  if (!availability || !date || !durationMinutes) return []
+
+  const dayStart = toMin(availability.startTime)
+  const dayEnd = toMin(availability.endTime)
+  if (dayStart == null || dayEnd == null || dayEnd <= dayStart) return []
+
+  const blocks = []
+  const breakStart = toMin(availability.breakStartTime)
+  const breakEnd = toMin(availability.breakEndTime)
+  if (breakStart != null && breakEnd != null && breakEnd > breakStart) {
+    blocks.push({ kind: 'break', from: breakStart, to: breakEnd })
+  }
+  appointments
+    .filter((a) => a.status !== 'CANCELLED' && a.startTime && a.endTime)
+    .forEach((a) =>
+      blocks.push({
+        kind: 'booked',
+        from: toMin(a.startTime.slice(0, 5)),
+        to: toMin(a.endTime.slice(0, 5)),
+        status: a.status,
+        patientId: a.patientId,
+      }),
+    )
+  blocks.sort((x, y) => x.from - y.from)
+
+  const now = dayjs()
+  const isToday = date.isSame(now, 'day')
+  const nowMin = now.hour() * 60 + now.minute()
+
+  const segments = []
+  const range = (from, to) => `${fmt12(fmt(from))} – ${fmt12(fmt(to))}`
+
+  const pushFree = (from, to) => {
+    if (to <= from) return
+    const slots = []
+    for (let s = from; s + durationMinutes <= to; s += durationMinutes) {
+      // A slot whose time has passed still shows, greyed: seeing that the morning is gone
+      // is more use than a stretch that silently starts at lunchtime.
+      slots.push({ start: fmt(s), label: fmt12(fmt(s)), past: isToday && s < nowMin })
+    }
+    segments.push({ kind: 'free', from: fmt(from), range: range(from, to), slots })
+  }
+
+  // Sorting first is what lets a single cursor do this: blocks that overlap or nest simply
+  // push the cursor along instead of opening a phantom gap behind it.
+  let cursor = dayStart
+  for (const block of blocks) {
+    const from = Math.max(block.from, cursor)
+    const to = Math.min(block.to, dayEnd)
+    if (to <= from) continue
+    if (from > cursor) pushFree(cursor, from)
+    segments.push({ ...block, from: fmt(from), range: range(from, to) })
+    cursor = to
+    if (cursor >= dayEnd) break
+  }
+  if (cursor < dayEnd) pushFree(cursor, dayEnd)
+
+  return segments
+}

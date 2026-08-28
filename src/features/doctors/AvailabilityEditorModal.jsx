@@ -139,42 +139,46 @@ export default function AvailabilityEditorModal({ open, doctorId, availability, 
               </div>
               <div style={{ width: 210 }}>
                 <TimePicker
-                  format="HH:mm"
+                  format="h:mm A"
+                  use12Hours
                   minuteStep={15}
                   disabled={!r.enabled}
                   value={r.start}
                   onChange={(v) => set(d.key, { start: v })}
                   placeholder="Start"
-                  style={{ width: 95 }}
+                  style={{ width: 112 }}
                 />
                 <TimePicker
-                  format="HH:mm"
+                  format="h:mm A"
+                  use12Hours
                   minuteStep={15}
                   disabled={!r.enabled}
                   value={r.end}
                   onChange={(v) => set(d.key, { end: v })}
                   placeholder="End"
-                  style={{ width: 95, marginLeft: 8 }}
+                  style={{ width: 112, marginLeft: 8 }}
                 />
               </div>
               <Space>
                 <TimePicker
-                  format="HH:mm"
+                  format="h:mm A"
+                  use12Hours
                   minuteStep={15}
                   disabled={!r.enabled}
                   value={r.breakStart}
                   onChange={(v) => set(d.key, { breakStart: v })}
                   placeholder="Break start"
-                  style={{ width: 110 }}
+                  style={{ width: 128 }}
                 />
                 <TimePicker
-                  format="HH:mm"
+                  format="h:mm A"
+                  use12Hours
                   minuteStep={15}
                   disabled={!r.enabled}
                   value={r.breakEnd}
                   onChange={(v) => set(d.key, { breakEnd: v })}
                   placeholder="Break end"
-                  style={{ width: 110 }}
+                  style={{ width: 128 }}
                 />
               </Space>
             </div>

@@ -13,6 +13,30 @@ const CELL = {
   },
 }
 
+// How each status is drawn on the board. Green still means "coming up, this time is
+// spoken for"; a visit that already happened goes blue and says so, because at a glance
+// the two are different questions - one you might still move, the other is history.
+//
+// CANCELLED has no entry: cancelling soft-deletes the row, so it never comes back from
+// the API. The lookup falls back to SCHEDULED for any status added later, which shows the
+// appointment rather than silently dropping it from the day.
+export const APPOINTMENT_LOOK = {
+  SCHEDULED: {
+    label: 'Booked',
+    background: 'rgba(34,158,102,0.20)',
+    border: '#37A06E',
+    accent: '#2E8B5E',
+    color: '#1F7A4D',
+  },
+  COMPLETED: {
+    label: 'Completed',
+    background: 'rgba(59,113,202,0.16)',
+    border: '#5B8DEF',
+    accent: '#3B71CA',
+    color: '#2B5CA8',
+  },
+}
+
 function endOf(appt) {
   if (appt.endTime) return appt.endTime
   const [h, m] = appt.startTime.split(':').map(Number)
@@ -146,8 +170,9 @@ export default function DoctorDayColumn({
             const band = bandFromTimes(appt.startTime, endOf(appt))
             if (!band) return null
             const range = `${fmt12(appt.startTime.slice(0, 5))} – ${fmt12(endOf(appt).slice(0, 5))}`
+            const look = APPOINTMENT_LOOK[appt.status] ?? APPOINTMENT_LOOK.SCHEDULED
             return (
-              <Tooltip key={appt.id} title={`Booked — ${range}`}>
+              <Tooltip key={appt.id} title={`${look.label} — ${range}`}>
                 <div
                   onClick={() => onPickAppointment(appt)}
                   style={{
@@ -156,11 +181,11 @@ export default function DoctorDayColumn({
                     right: 0,
                     top: (band.topMin / 60) * ROW_H,
                     height: (band.durMin / 60) * ROW_H,
-                    background: 'rgba(34,158,102,0.20)',
-                    borderTop: '1px solid #37A06E',
-                    borderBottom: '1px solid #37A06E',
-                    borderLeft: '3px solid #2E8B5E',
-                    color: '#1F7A4D',
+                    background: look.background,
+                    borderTop: `1px solid ${look.border}`,
+                    borderBottom: `1px solid ${look.border}`,
+                    borderLeft: `3px solid ${look.accent}`,
+                    color: look.color,
                     fontSize: 11,
                     fontWeight: 700,
                     display: 'flex',
@@ -170,7 +195,7 @@ export default function DoctorDayColumn({
                     zIndex: 3,
                   }}
                 >
-                  Booked
+                  {look.label}
                 </div>
               </Tooltip>
             )

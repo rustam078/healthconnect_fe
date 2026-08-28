@@ -7,7 +7,7 @@ import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
 import { getAppointmentsByDoctor } from './appointmentsApi.js'
 import { dayOfWeekOf, firstBookableStart, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
-import DoctorDayColumn from './DoctorDayColumn.jsx'
+import DoctorDayColumn, { APPOINTMENT_LOOK } from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
 import AppointmentDetailsDrawer from './AppointmentDetailsDrawer.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
@@ -174,7 +174,14 @@ export default function AppointmentsPage() {
         <Space size={18} wrap style={{ marginBottom: 12 }}>
           <LegendDot label="Available" style={{ background: '#FFFFFF', border: '1px solid #D7E0DC' }} />
           <LegendDot label="Break" style={{ background: '#FBEAC6', border: '1px solid #E9CE93' }} />
-          <LegendDot label="Booked" style={{ background: 'rgba(34,158,102,0.18)', border: '1px solid #37A06E' }} />
+          <LegendDot
+            label="Booked"
+            style={{ background: APPOINTMENT_LOOK.SCHEDULED.background, border: `1px solid ${APPOINTMENT_LOOK.SCHEDULED.border}` }}
+          />
+          <LegendDot
+            label="Completed"
+            style={{ background: APPOINTMENT_LOOK.COMPLETED.background, border: `1px solid ${APPOINTMENT_LOOK.COMPLETED.border}` }}
+          />
           <LegendDot label="Passed" style={{ background: '#E9ECEE', border: '1px solid #D5DADD' }} />
           <LegendDot
             label="Outside hours"
