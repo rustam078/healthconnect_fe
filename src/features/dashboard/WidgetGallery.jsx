@@ -3,8 +3,14 @@ import { Drawer, Tabs, Row, Col, Spin, Alert, Empty, Button, Space, Typography, 
 import { useGalleryWidgets, useDeleteWidget } from './boardsHooks.js'
 import WidgetPreviewCard from './WidgetPreviewCard.jsx'
 import AskAiPanel from './AskAiPanel.jsx'
+import NewWidgetPanel from './NewWidgetPanel.jsx'
 
 const { Text } = Typography
+
+// Writing raw SQL is a developer's job, and the tab shows raw database errors to match.
+// There is no auth yet, so it is on for everyone; when Spring Security lands this single
+// line becomes the role check.
+const canCreateWidgets = true
 
 // The widget picker, as a side drawer. Tick as many as you like, then "Add selected".
 //
@@ -29,6 +35,8 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
         ? current.filter((w) => w.id !== widget.id)
         : [...current, widget],
     )
+
+  const addToSelection = (widget) => setSelected((current) => [...current, widget])
 
   const handleDelete = (widget) =>
     deleteWidget.mutate(widget.id, {
@@ -95,8 +103,17 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
           {
             key: 'ai',
             label: 'Ask AI',
-            children: <AskAiPanel onAdd={(widget) => setSelected((c) => [...c, widget])} />,
+            children: <AskAiPanel onAdd={addToSelection} />,
           },
+          ...(canCreateWidgets
+            ? [
+                {
+                  key: 'new',
+                  label: 'New widget',
+                  children: <NewWidgetPanel open={open} onAdd={addToSelection} />,
+                },
+              ]
+            : []),
         ]}
       />
     </Drawer>

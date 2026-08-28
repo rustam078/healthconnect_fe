@@ -20,9 +20,12 @@ export default function WidgetBody({ type, rows = [], compact = false }) {
     // stays centred however tall the widget is dragged.
     return (
       <div
+        // No minimum height on a board card: the cell already has a definite height, and
+        // a floor taller than a short cell made a single number overflow and grow a
+        // scrollbar. The gallery's preview box is a fixed 130px, so it keeps its floor.
         style={{
           height: '100%',
-          minHeight: compact ? 90 : 120,
+          minHeight: compact ? 90 : 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -80,7 +83,7 @@ export default function WidgetBody({ type, rows = [], compact = false }) {
 
   if (!chart) return <Empty description={`Unsupported type: ${type}`} />
   return (
-    <div style={{ position: 'relative', height: '100%', minHeight: compact ? 90 : 140 }}>
+    <div style={{ position: 'relative', height: '100%', minHeight: compact ? 90 : 0 }}>
       {chart}
     </div>
   )

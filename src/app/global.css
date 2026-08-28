@@ -22,3 +22,23 @@ body {
   font-size: 14px;
 }
 
+
+/* Widgets scroll when their content is taller than the card, but the scrollbar
+   itself is noise on a dashboard: a card that is one pixel too short grows a
+   grey bar down its side and reads as broken. Hide the bar, keep the scrolling
+   - wheel, trackpad, touch and keyboard all still work.
+
+   Descendants are included because a TABLE widget scrolls in its own inner
+   container, not in the card body, so hiding only the outer bar would leave the
+   inner one on show. */
+.hide-scrollbar,
+.hide-scrollbar * {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.hide-scrollbar *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

@@ -19,6 +19,7 @@ export default function WidgetCard({ item, editable = false, onRemove }) {
       // rather than the card overflowing it.
       style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
       styles={{ body: { flex: 1, overflow: 'auto' } }}
+      classNames={{ body: 'hide-scrollbar' }}
       extra={
         editable && (
           <Popconfirm title="Remove from board?" onConfirm={() => onRemove(item.widgetId)}>
