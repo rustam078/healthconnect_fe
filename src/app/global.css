@@ -1,0 +1,24 @@
+/* Global UI scale.
+   The screens were drawn at a density that reads oversized on a browser sitting
+   at 100% zoom: a 1280px laptop had to scroll for content that should have fit.
+   Zooming the root shrinks every px in the app uniformly, so 100% zoom now
+   looks the way 90% used to. Component numbers stay untouched - retune the
+   whole app's density from this one value.
+
+   Zoom does not rescale viewport units, so a plain 100vh only covers 90% of the
+   screen now. Full-height elements divide by --ui-scale (see AppLayout). The
+   variable is deliberately a bare number: a calc() with a length in it would be
+   resolved here at :root and arrive at the use site already zoomed twice. */
+:root {
+  --ui-scale: 0.9;
+  zoom: var(--ui-scale);
+}
+
+/* Antd ships no page reset of its own, so without these the app floats inside
+   the browser's default 8px body margin and plain text nodes fall back to 16px,
+   a size larger than every antd component sitting next to it. */
+body {
+  margin: 0;
+  font-size: 14px;
+}
+

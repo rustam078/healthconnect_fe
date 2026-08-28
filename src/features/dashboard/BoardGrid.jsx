@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { Empty } from 'antd'
-import GridLayout, { useContainerWidth, verticalCompactor } from 'react-grid-layout'
+import GridLayout, { setTransform, useContainerWidth, verticalCompactor } from 'react-grid-layout'
 import WidgetCard from './WidgetCard.jsx'
 import { COLS, ROW_HEIGHT } from './boardLayout.js'
+import { uiScale } from '../../app/uiScale.js'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
@@ -19,10 +20,15 @@ import 'react-resizable/css/styles.css'
 // 1. measureBeforeMount: true is required. Without it useContainerWidth reports its
 //    default width of 1280 on the first render and the third column hangs off the edge.
 //
-// 2. `layout` is the INITIAL layout only - after mount GridLayout keeps its own state and
+// 2. The app is zoomed out (see global.css), and mouse coordinates arrive in screen
+//    pixels while the grid positions its items in the app's own smaller pixels. Without
+//    the scaled strategy a dragged widget trails behind the cursor by that difference.
+//
+// 3. `layout` is the INITIAL layout only - after mount GridLayout keeps its own state and
 //    ignores the prop. So the grid is remounted via `layoutKey`. The CALLER owns that key
 //    precisely because the right moment to remount differs between modes: in view mode
 //    any change should remount, but in edit mode remounting on a drag would kill the drag.
+
 export default function BoardGrid({
   items = [],
   layoutKey = 'static',
@@ -31,6 +37,13 @@ export default function BoardGrid({
   onRemove,
 }) {
   const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true })
+
+  // Positioning itself is the library default (CSS transforms). The point of spelling the
+  // strategy out is `scale`: it is what the grid divides incoming mouse pixels by.
+  const positionStrategy = useMemo(
+    () => ({ type: 'transform', scale: uiScale(), calcStyle: setTransform }),
+    [],
+  )
 
   // react-grid-layout wants its own array, keyed by a STRING id.
   const layout = useMemo(
@@ -64,6 +77,7 @@ export default function BoardGrid({
           dragConfig={{ enabled: editable, cancel: '.ant-btn, .ant-table-wrapper, .ant-popover' }}
           resizeConfig={{ enabled: editable }}
           compactor={verticalCompactor}
+          positionStrategy={positionStrategy}
           onLayoutChange={editable ? onLayoutChange : undefined}
         >
           {items.map((item) => (

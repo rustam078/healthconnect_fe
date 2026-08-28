@@ -18,6 +18,10 @@ const { Header, Sider, Content } = Layout
 const SIDER_WIDTH = 244
 const SIDER_COLLAPSED = 76
 
+// The app is rendered at --ui-scale (see global.css) and zoom leaves viewport
+// units alone, so a bare 100vh would stop short of the bottom of the screen.
+const FULL_HEIGHT = 'calc(100vh / var(--ui-scale))'
+
 const NAV = [
   { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients' },
@@ -44,7 +48,7 @@ export default function AppLayout() {
   const currentTitle = NAV.find((n) => n.key === selectedKey)?.title || 'HealthConnect'
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: FULL_HEIGHT }}>
       <Sider
         width={SIDER_WIDTH}
         collapsedWidth={SIDER_COLLAPSED}
@@ -58,7 +62,7 @@ export default function AppLayout() {
           insetInlineStart: 0,
           top: 0,
           bottom: 0,
-          height: '100vh',
+          height: FULL_HEIGHT,
           overflow: 'auto',
           zIndex: 20,
         }}
@@ -109,7 +113,7 @@ export default function AppLayout() {
         style={{
           marginInlineStart: collapsed ? SIDER_COLLAPSED : SIDER_WIDTH,
           transition: 'margin-inline-start 0.2s',
-          minHeight: '100vh',
+          minHeight: FULL_HEIGHT,
         }}
       >
         <Header
@@ -141,7 +145,7 @@ export default function AppLayout() {
 
         {/* minHeight keeps the tinted page background covering the full viewport on short
             pages, instead of stopping under the content and showing white below. */}
-        <Content style={{ padding: '28px 32px', minHeight: 'calc(100vh - 64px)' }}>
+        <Content style={{ padding: '28px 32px', minHeight: `calc(${FULL_HEIGHT} - 64px)` }}>
           <Outlet />
         </Content>
       </Layout>
