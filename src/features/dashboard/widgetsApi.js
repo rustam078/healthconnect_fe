@@ -17,3 +17,28 @@ export function getWidgetData(idOrCode, body = {}) {
 export function deleteWidget(id) {
   return axiosClient.delete(`/widgets/${id}`)
 }
+
+// Run a query that has NOT been saved yet.
+//
+// This is what lets the "New widget" tab prove a query works before anything is written:
+// a widget rejected at preview time never existed, so there is no soft-deleted row left
+// holding its code in the unique index.
+export function dryRunWidget({ sqlTemplate, pageSize = 20 }) {
+  return axiosClient.post('/widgets/dry-run', { sqlTemplate, pageSize })
+}
+
+// Save a hand-written widget. The backend creates it APPROVED, so it appears in the
+// gallery immediately - unlike an AI draft, a person already reviewed this one by
+// looking at its preview.
+export function createWidget({ code, name, description, type, sqlTemplate }) {
+  return axiosClient.post('/widgets', {
+    code,
+    name,
+    description,
+    type,
+    sqlTemplate,
+    // Fixed, not a form field: the gallery only ever lists WIDGET and approved PROMPT
+    // widgets, so any other module would create something nobody can see.
+    module: 'WIDGET',
+  })
+}
