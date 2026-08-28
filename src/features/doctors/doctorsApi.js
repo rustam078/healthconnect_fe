@@ -2,6 +2,9 @@ import axiosClient from '../../api/axiosClient.js'
 
 const FILTER_KEYS = [
   'gender',
+  // matched case-insensitively against the specialty NAME on the backend (a LIKE),
+  // so send the name, not the id
+  'specialties',
   'qualification',
   'minExperience',
   'maxExperience',

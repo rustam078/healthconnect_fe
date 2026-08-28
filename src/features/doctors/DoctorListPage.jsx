@@ -16,11 +16,13 @@ import { PlusOutlined, FilterOutlined } from '@ant-design/icons'
 import { useDoctors, useDeleteDoctor } from './doctorsHooks.js'
 import { getDoctorColumns } from './doctorColumns.jsx'
 import DoctorFormModal from './DoctorFormModal.jsx'
+import { useSpecialties } from '../specialties/specialtiesHooks.js'
 import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
 const EMPTY_FILTERS = {
   gender: undefined,
+  specialties: undefined,
   qualification: '',
   minExperience: null,
   maxExperience: null,
@@ -43,6 +45,10 @@ export default function DoctorListPage() {
   const [modal, setModal] = useState({ open: false, mode: 'create', record: null })
 
   const { data, isFetching, isError, error } = useDoctors({ search, filter: filters, page, size })
+  // One page big enough for the whole list - the dropdown should show every specialty,
+  // not the first twenty.
+  const { data: specialtyPage } = useSpecialties({ page: 1, size: 200 })
+  const specialtyOptions = (specialtyPage?.content ?? []).map((s) => ({ label: s.name, value: s.name }))
   const deleteMutation = useDeleteDoctor()
 
   const rows = data?.content ?? []
@@ -90,6 +96,19 @@ export default function DoctorListPage() {
             options={GENDER_OPTIONS}
             value={draft.gender}
             onChange={(v) => setDraftField('gender', v)}
+          />
+        </div>
+        <div>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Specialty</Typography.Text>
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="Any"
+            style={{ width: '100%' }}
+            options={specialtyOptions}
+            value={draft.specialties}
+            onChange={(v) => setDraftField('specialties', v)}
           />
         </div>
         <div>

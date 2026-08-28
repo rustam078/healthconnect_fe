@@ -13,6 +13,11 @@ import { BRAND } from '../../app/theme.js'
 
 const { Header, Sider, Content } = Layout
 
+// The sidebar is fixed, so the content beside it has to be pushed over by exactly the
+// same amount. Keeping both numbers here means they cannot drift apart.
+const SIDER_WIDTH = 244
+const SIDER_COLLAPSED = 76
+
 const NAV = [
   { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients' },
@@ -41,11 +46,22 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
-        width={244}
-        collapsedWidth={76}
+        width={SIDER_WIDTH}
+        collapsedWidth={SIDER_COLLAPSED}
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
+        // Pinned to the viewport: the nav used to scroll away with the page, leaving a
+        // pale gap under it once the content was taller than the screen.
+        style={{
+          position: 'fixed',
+          insetInlineStart: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          overflow: 'auto',
+          zIndex: 20,
+        }}
       >
         <div
           style={{
@@ -89,7 +105,13 @@ export default function AppLayout() {
         />
       </Sider>
 
-      <Layout>
+      <Layout
+        style={{
+          marginInlineStart: collapsed ? SIDER_COLLAPSED : SIDER_WIDTH,
+          transition: 'margin-inline-start 0.2s',
+          minHeight: '100vh',
+        }}
+      >
         <Header
           style={{
             display: 'flex',
@@ -117,7 +139,9 @@ export default function AppLayout() {
           </div>
         </Header>
 
-        <Content style={{ padding: '28px 32px' }}>
+        {/* minHeight keeps the tinted page background covering the full viewport on short
+            pages, instead of stopping under the content and showing white below. */}
+        <Content style={{ padding: '28px 32px', minHeight: 'calc(100vh - 64px)' }}>
           <Outlet />
         </Content>
       </Layout>
