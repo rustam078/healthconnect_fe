@@ -96,6 +96,25 @@ export default function DoctorDayColumn({
           {day.slots.map((s, i) => (
             <Cell key={s.start} slot={s} onPick={onPick} last={i === day.slots.length - 1} />
           ))}
+          {day.elapsedBand && (
+            <Tooltip title="Time already passed">
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: (day.elapsedBand.topMin / 60) * ROW_H,
+                  height: (day.elapsedBand.durMin / 60) * ROW_H,
+                  background: '#E9ECEE',
+                  borderBottom: '1px solid #D5DADD',
+                  cursor: 'not-allowed',
+                  // Under the break and booked bands: what is already booked in this hour
+                  // matters more than what is already spent.
+                  zIndex: 1,
+                }}
+              />
+            </Tooltip>
+          )}
           {day.breakBand && (
             <Tooltip title={`Break — ${day.breakBand.label}`}>
               <div

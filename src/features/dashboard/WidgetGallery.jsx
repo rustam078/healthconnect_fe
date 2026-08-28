@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Drawer, Tabs, Row, Col, Spin, Alert, Empty, Button, Space, Typography, App } from 'antd'
+import { Drawer, Tabs, Row, Col, Spin, Alert, Empty, Button, Space, Typography, Input, App } from 'antd'
+import { SearchOutlined } from '@ant-design/icons'
 import { useGalleryWidgets, useDeleteWidget } from './boardsHooks.js'
 import WidgetPreviewCard from './WidgetPreviewCard.jsx'
 import AskAiPanel from './AskAiPanel.jsx'
@@ -22,12 +23,26 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
   const deleteWidget = useDeleteWidget()
 
   const [selected, setSelected] = useState([]) // gallery widget objects, not ids
+  const [search, setSearch] = useState('')
+  const [tab, setTab] = useState('library')
 
   // Start clean each time the gallery opens - a stale selection from last time would be
-  // added silently.
+  // added silently, and a stale search would hide most of the library for no visible
+  // reason on a box the reader has to scroll up to notice.
   useEffect(() => {
-    if (open) setSelected([])
+    if (!open) return
+    setSelected([])
+    setSearch('')
+    setTab('library')
   }, [open])
+
+  // Filtering happens here rather than on the server: the gallery already holds every
+  // widget in memory (two fetches, cached), so a round trip per keystroke would buy
+  // nothing but latency.
+  const term = search.trim().toLowerCase()
+  const shownWidgets = term
+    ? widgets.filter((w) => w.name?.toLowerCase().includes(term))
+    : widgets
 
   const toggle = (widget) =>
     setSelected((current) =>
@@ -58,11 +73,13 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
     <Alert type="error" message={error.message || 'Failed to load widgets'} />
   ) : widgets.length === 0 ? (
     <Empty description="No widgets yet. Try the Ask AI tab." />
+  ) : shownWidgets.length === 0 ? (
+    <Empty description={`No widget's title matches "${search.trim()}".`} />
   ) : (
     // Two per row, not three: a drawer is narrower than the modal this replaced, and
     // three cards across left the previews too small to tell apart.
     <Row gutter={[16, 16]}>
-      {widgets.map((widget) => (
+      {shownWidgets.map((widget) => (
         <Col key={widget.id} xs={24} sm={12}>
           <WidgetPreviewCard
             widget={widget}
@@ -97,7 +114,29 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
       }
     >
       <Tabs
-        defaultActiveKey="library"
+        activeKey={tab}
+        onChange={setTab}
+        // The tab bar's empty right half is the natural home for this: it is beside the
+        // Library tab it filters, and it costs the cards no vertical room. It appears only
+        // on that tab, since a search box above a question box or a SQL form would look
+        // like it searched those.
+        tabBarExtraContent={
+          tab === 'library' && widgets.length > 0
+            ? {
+                right: (
+                  <Input
+                    allowClear
+                    size="small"
+                    prefix={<SearchOutlined />}
+                    placeholder="Search by title"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    style={{ width: 220 }}
+                  />
+                ),
+              }
+            : undefined
+        }
         items={[
           { key: 'library', label: 'Library', children: library },
           {

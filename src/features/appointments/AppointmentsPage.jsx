@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { useQuery, useQueries } from '@tanstack/react-query'
-import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty, Input } from 'antd'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
+import { Card, DatePicker, Button, Space, Typography, Alert, Skeleton, Empty, Input, Spin } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
 import { getAppointmentsByDoctor } from './appointmentsApi.js'
-import { dayOfWeekOf, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
+import { dayOfWeekOf, firstBookableStart, TIME_LABELS, ROW_H, HEADER_H } from './slots.js'
 import DoctorDayColumn from './DoctorDayColumn.jsx'
 import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
 import AppointmentDetailsDrawer from './AppointmentDetailsDrawer.jsx'
@@ -14,6 +14,15 @@ import { getErrorMessage } from '../../utils/apiError.js'
 import { BRAND } from '../../app/theme.js'
 
 const isSunday = (d) => d.day() === 0
+
+// Doctors are loaded a chunk at a time. Every doctor column costs two more requests (their
+// availability and their appointments for the day), so loading all 200 up front fired
+// hundreds of requests to draw a board only a dozen columns of which fit on screen.
+const DOCTORS_PER_CHUNK = 12
+
+// How far along the board you have to scroll before the next chunk is fetched. Early
+// enough that the columns are usually there by the time you reach them.
+const LOAD_MORE_AT = 0.8
 
 const HOVER_CSS = `
 .appt-open .appt-open-hint { opacity: 0; color: #37A06E; transition: opacity .12s; }
@@ -63,13 +72,41 @@ export default function AppointmentsPage() {
   })
   const [drawer, setDrawer] = useState({ open: false, initial: null })
   const [search, setSearch] = useState('')
-  const [qualification, setQualification] = useState('')
 
-  const doctorsQuery = useQuery({
-    queryKey: ['appt-doctors', { search, qualification }],
-    queryFn: () => getDoctors({ search, filter: { qualification }, page: 0, size: 100 }),
+  const doctorsQuery = useInfiniteQuery({
+    queryKey: ['appt-doctors', search],
+    queryFn: ({ pageParam }) => getDoctors({ search, page: pageParam, size: DOCTORS_PER_CHUNK }),
+    initialPageParam: 0,
+    // Spring tells us which page this was and whether it was the last one, so there is
+    // nothing to count here.
+    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.number + 1),
   })
-  const doctors = doctorsQuery.data?.content ?? []
+
+  // useMemo, not a bare flatMap: this array is the dependency of the two useQueries below,
+  // and a fresh array every render would rebuild both query lists on every render.
+  const doctors = useMemo(
+    () => doctorsQuery.data?.pages.flatMap((p) => p.content ?? []) ?? [],
+    [doctorsQuery.data],
+  )
+  const totalDoctors = doctorsQuery.data?.pages[0]?.totalElements ?? doctors.length
+
+  const boardRef = useRef(null)
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = doctorsQuery
+
+  const handleBoardScroll = (e) => {
+    const el = e.currentTarget
+    const scrollable = el.scrollWidth - el.clientWidth
+    if (scrollable <= 0 || !hasNextPage || isFetchingNextPage) return
+    if (el.scrollLeft / scrollable >= LOAD_MORE_AT) fetchNextPage()
+  }
+
+  // On a wide screen the first chunk may not fill the board, and a board with nothing to
+  // scroll can never reach the trigger above. Keep pulling chunks until it overflows.
+  useEffect(() => {
+    const el = boardRef.current
+    if (!el || !hasNextPage || isFetchingNextPage) return
+    if (el.scrollWidth <= el.clientWidth) fetchNextPage()
+  }, [doctors.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const detailsQueries = useQueries({
     queries: doctors.map((d) => ({
@@ -105,7 +142,10 @@ export default function AppointmentsPage() {
               Appointments
             </Typography.Title>
             <Typography.Text type="secondary">
-              {date.format('dddd, DD MMMM YYYY')} · {doctors.length} doctor{doctors.length === 1 ? '' : 's'}
+              {date.format('dddd, DD MMMM YYYY')} ·{' '}
+              {doctors.length < totalDoctors
+                ? `${doctors.length} of ${totalDoctors} doctors — scroll for more`
+                : `${doctors.length} doctor${doctors.length === 1 ? '' : 's'}`}
             </Typography.Text>
           </div>
           <Space wrap>
@@ -116,15 +156,6 @@ export default function AppointmentsPage() {
               onSearch={setSearch}
               onChange={(e) => {
                 if (!e.target.value) setSearch('')
-              }}
-            />
-            <Input.Search
-              allowClear
-              placeholder="Specialty / qualification"
-              style={{ width: 200 }}
-              onSearch={setQualification}
-              onChange={(e) => {
-                if (!e.target.value) setQualification('')
               }}
             />
             <DatePicker
@@ -156,7 +187,7 @@ export default function AppointmentsPage() {
         ) : doctorsQuery.isError ? (
           <Typography.Text type="danger">{getErrorMessage(doctorsQuery.error)}</Typography.Text>
         ) : doctors.length === 0 ? (
-          <Empty description="No doctors match your search / filters" />
+          <Empty description="No doctors match your search" />
         ) : (
           <div
             style={{
@@ -167,7 +198,11 @@ export default function AppointmentsPage() {
             }}
           >
             <TimeAxis />
-            <div style={{ display: 'flex', overflowX: 'auto', flex: 1 }}>
+            <div
+              ref={boardRef}
+              onScroll={handleBoardScroll}
+              style={{ display: 'flex', overflowX: 'auto', flex: 1 }}
+            >
               {doctors.map((d, i) => {
                 const details = detailsQueries[i]?.data
                 const availability = (details?.availabilityToSave ?? []).find((a) => a.dayOfWeek === weekday)
@@ -180,7 +215,13 @@ export default function AppointmentsPage() {
                     loading={detailsQueries[i]?.isLoading}
                     appointments={apptQueries[i]?.data?.content ?? []}
                     onPick={(slot) =>
-                      openBook({ doctorId: d.id, appointmentDate: date, startTime: slot.start })
+                      openBook({
+                        doctorId: d.id,
+                        appointmentDate: date,
+                        // Not slot.start: clicking the hour you are already inside would
+                        // otherwise pre-fill a time that has been and gone.
+                        startTime: firstBookableStart(slot.start, date),
+                      })
                     }
                     onPickAppointment={(appt) =>
                       setDetails({ open: true, appointment: appt, doctor: d })
@@ -188,6 +229,19 @@ export default function AppointmentsPage() {
                   />
                 )
               })}
+              {isFetchingNextPage && (
+                <div
+                  style={{
+                    flex: '0 0 120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderLeft: `1px solid ${BRAND.border}`,
+                  }}
+                >
+                  <Spin size="small" />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -203,7 +257,6 @@ export default function AppointmentsPage() {
       <BookAppointmentDrawer
         open={drawer.open}
         initial={drawer.initial}
-        doctors={doctors}
         onClose={() => setDrawer((s) => ({ ...s, open: false }))}
       />
 

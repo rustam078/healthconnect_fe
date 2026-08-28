@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCreateAppointment } from './appointmentsHooks.js'
 import { getPatients } from '../patients/patientsApi.js'
+import { getDoctors } from '../doctors/doctorsApi.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
 const DURATION_OPTIONS = [
@@ -12,7 +13,7 @@ const DURATION_OPTIONS = [
   { label: '60 minutes', value: 60 },
 ]
 
-export default function BookAppointmentDrawer({ open, initial, doctors, onClose }) {
+export default function BookAppointmentDrawer({ open, initial, onClose }) {
   const { message } = App.useApp()
   const [form] = Form.useForm()
   const createMutation = useCreateAppointment()
@@ -23,7 +24,16 @@ export default function BookAppointmentDrawer({ open, initial, doctors, onClose 
     enabled: open,
   })
 
-  const doctorOptions = (doctors || []).map((d) => ({
+  // The board behind this drawer only holds the doctors scrolled into view so far, so the
+  // list is fetched here instead of being handed down: you must be able to book any doctor,
+  // not only the ones that happen to be on screen. One request, and only while open.
+  const doctorsQuery = useQuery({
+    queryKey: ['appt-doctor-options'],
+    queryFn: () => getDoctors({ page: 0, size: 200 }),
+    enabled: open,
+  })
+
+  const doctorOptions = (doctorsQuery.data?.content ?? []).map((d) => ({
     label: `${[d.firstName, d.lastName].filter(Boolean).join(' ')} — ${d.qualification}`,
     value: d.id,
   }))

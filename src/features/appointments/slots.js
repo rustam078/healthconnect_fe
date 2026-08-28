@@ -47,10 +47,24 @@ export function bandFromTimes(startTime, endTime) {
   return { topMin: s - DAY_START * 60, durMin: e - s }
 }
 
-// Returns { slots, breakBand } or null (caller shows the "not available" state).
-// Each hour slot status: off = outside working hours, past = time gone today,
-// available = bookable (white). Break and booked appointments are drawn as
-// proportional bands (see bandFromTimes), not per-hour statuses.
+// The first time you can actually book inside an hour slot.
+//
+// An hour that has already started is still bookable for the minutes left in it, but
+// booking it from the top of the hour would send a start time in the past. So on today's
+// running hour we begin at the next 5-minute mark instead.
+export function firstBookableStart(slotStart, date) {
+  const now = dayjs()
+  if (!date.isSame(now, 'day')) return slotStart
+  const nowMin = now.hour() * 60 + now.minute()
+  const s = toMin(slotStart)
+  if (s >= nowMin) return slotStart
+  return fmt(Math.min(Math.ceil((nowMin + 1) / 5) * 5, s + 60))
+}
+
+// Returns { slots, breakBand, elapsedBand } or null (caller shows the "not available"
+// state). Each hour slot status: off = outside working hours, past = time gone today,
+// available = bookable (white). Break, booked appointments and the elapsed part of the
+// current hour are drawn as proportional bands (see bandFromTimes), not per-hour statuses.
 export function buildDaySlots(avail, date) {
   if (!avail) return null
 
@@ -68,7 +82,10 @@ export function buildDaySlots(avail, date) {
     const start = fmt(s)
     let status
     if (workStart == null || e <= workStart || s >= workEnd) status = 'off'
-    else if (isPastDay || (isToday && s < nowMin)) status = 'past'
+    // Compared against the slot's END, not its start: an hour is only gone once it is
+    // over. Writing off the whole 3-4 block the moment the clock struck 3 threw away
+    // fifty-two bookable minutes. The part that HAS elapsed is shaded by elapsedBand.
+    else if (isPastDay || (isToday && e <= nowMin)) status = 'past'
     else status = 'available'
     return { start, end: fmt(e), status }
   })
@@ -78,5 +95,15 @@ export function buildDaySlots(avail, date) {
     breakBand.label = `${fmt12(avail.breakStartTime.slice(0, 5))} – ${fmt12(avail.breakEndTime.slice(0, 5))}`
   }
 
-  return { slots, breakBand }
+  // The minutes of the current hour that have already gone. Shaded the same grey as a
+  // finished hour, so at 3:08 the 3-4 row reads as eight minutes spent and the rest still
+  // open, instead of the whole row being written off. Only drawn over an hour that would
+  // otherwise be bookable - there is nothing to shade on an hour outside working time.
+  const currentHour = slots.find((s) => toMin(s.start) <= nowMin && nowMin < toMin(s.end))
+  const elapsedBand =
+    isToday && currentHour?.status === 'available'
+      ? bandFromTimes(currentHour.start, fmt(nowMin))
+      : null
+
+  return { slots, breakBand, elapsedBand }
 }
