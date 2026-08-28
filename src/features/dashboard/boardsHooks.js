@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getBoards, createBoard, getBoard, saveBoard, deleteBoard } from './boardsApi.js'
-import { getWidgets, getWidgetData, deleteWidget } from './widgetsApi.js'
+import { getWidgets, getWidgetData, deleteWidget, dryRunWidget, createWidget } from './widgetsApi.js'
 
 // ---- boards ----
 
@@ -100,5 +100,21 @@ export function useWidgetData(idOrCode, pageSize = 50) {
     // One retry recovers from the transient case and still surfaces a real SQL error fast.
     retry: 1,
     retryDelay: 800,
+  })
+}
+
+// Previewing is a one-shot action, not cached state: the same SQL run twice should hit
+// the database twice, because the point is to see what the data looks like NOW.
+export function useDryRunWidget() {
+  return useMutation({ mutationFn: dryRunWidget })
+}
+
+// Creating a widget must invalidate the widget lists, or the new card only shows up in
+// the Library tab after a page refresh.
+export function useCreateWidget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createWidget,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['widgets'] }),
   })
 }
