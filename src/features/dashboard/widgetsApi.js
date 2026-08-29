@@ -30,15 +30,35 @@ export function dryRunWidget({ sqlTemplate, pageSize = 20 }) {
 // Save a hand-written widget. The backend creates it APPROVED, so it appears in the
 // gallery immediately - unlike an AI draft, a person already reviewed this one by
 // looking at its preview.
-export function createWidget({ code, name, description, type, sqlTemplate }) {
+export function createWidget({ code, name, description, type, module = 'WIDGET', filters, sqlTemplate }) {
   return axiosClient.post('/widgets', {
     code,
     name,
     description,
     type,
+    module,
+    // Sent only when there are any: a widget with no filters should store a null rather
+    // than an empty config, so the parser's "no settings" path is the one that runs.
+    ...(filters ? { filters } : {}),
     sqlTemplate,
-    // Fixed, not a form field: the gallery only ever lists WIDGET and approved PROMPT
-    // widgets, so any other module would create something nobody can see.
-    module: 'WIDGET',
+  })
+}
+
+// One widget in full, including its SQL and filter settings - what the edit form fills
+// itself from. The list endpoints deliberately return a lighter summary.
+export function getWidget(idOrCode) {
+  return axiosClient.get(`/widgets/${idOrCode}`)
+}
+
+// Save changes to an existing widget. `code` is deliberately absent: the backend keeps it
+// fixed for the life of the widget, because boards and lookups refer to widgets by code.
+export function updateWidget(id, { name, description, type, module = 'WIDGET', filters, sqlTemplate }) {
+  return axiosClient.put(`/widgets/${id}`, {
+    name,
+    description,
+    type,
+    module,
+    ...(filters ? { filters } : {}),
+    sqlTemplate,
   })
 }

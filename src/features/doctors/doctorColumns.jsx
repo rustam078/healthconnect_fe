@@ -1,10 +1,9 @@
 import { Button, Popconfirm, Space, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
-import { GENDER_OPTIONS } from '../../constants/enums.js'
+import { enumLabel } from '../../constants/enums.js'
 import { formatCurrency } from '../../utils/format.js'
 
-const GENDER_LABEL = Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label]))
 const GENDER_COLOR = { MALE: 'blue', FEMALE: 'magenta', OTHER: 'default' }
 const dash = <span style={{ color: '#9AA7A3' }}>—</span>
 
@@ -31,7 +30,7 @@ export function getDoctorColumns({ onEdit, onDelete }) {
       key: 'gender',
       width: 100,
       render: (v) =>
-        v ? <Tag color={GENDER_COLOR[v] || 'default'}>{GENDER_LABEL[v] || v}</Tag> : dash,
+        v ? <Tag color={GENDER_COLOR[v] || 'default'}>{enumLabel(v)}</Tag> : dash,
     },
     { title: 'Qualification', dataIndex: 'qualification', key: 'qualification', ellipsis: true },
     {

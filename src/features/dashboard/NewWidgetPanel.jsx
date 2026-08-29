@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Input, Select, Button, Space, Alert, Spin, Typography, Form, theme, App } from 'antd'
+import { Input, Select, Button, Space, Alert, Spin, Typography, Form, Row, Col, theme, App } from 'antd'
 import { PlayCircleOutlined, SaveOutlined, ClearOutlined } from '@ant-design/icons'
-import { useDryRunWidget, useCreateWidget } from './boardsHooks.js'
+import { useDryRunWidget, useCreateWidget, useUpdateWidget, useWidget } from './boardsHooks.js'
 import WidgetBody from './WidgetBody.jsx'
+import WidgetFilterEditor, { toFilterConfig, fromFilterConfig } from './WidgetFilterEditor.jsx'
+import SqlEditor from './SqlEditor.jsx'
 
 const { Text } = Typography
 
 const TYPES = ['COUNT', 'TABLE', 'BAR', 'LINE', 'PIE']
+
+// Gap between the two fields in a row. Only horizontal: the Form.Item below each field
+// already provides the vertical rhythm, and a row gutter here would double it.
+const FIELD_GUTTER = 16
+
+// The card's heading has one line to work with before it wraps and steals height from the
+// chart under it. The longest widget in the library is 25 characters.
+const TITLE_MAX = 30
+
+// WIDGET = a card for a board. INTEGRATION = a saved query used as an API, and the way a
+// dropdown gets its options (see optionsFrom). PROMPT is the AI tab's own module, not
+// something to pick by hand here.
+const MODULES = ['WIDGET', 'INTEGRATION']
 
 // "Active doctors (2026)" -> "active-doctors-2026"
 // The backend needs a unique code and nobody enjoys inventing one, so it follows the
@@ -27,7 +42,7 @@ export function toCode(name) {
 // Nothing is written to the database before Save. That is deliberate: a widget saved
 // first and deleted after would be SOFT deleted, and its code would stay reserved in the
 // unique index forever.
-export default function NewWidgetPanel({ open, onAdd }) {
+export default function NewWidgetPanel({ open, onAdd, editingId, onDoneEditing }) {
   const { token } = theme.useToken()
   const { message } = App.useApp()
 
@@ -35,6 +50,8 @@ export default function NewWidgetPanel({ open, onAdd }) {
   const [code, setCode] = useState('')
   const [codeEdited, setCodeEdited] = useState(false)
   const [type, setType] = useState('TABLE')
+  const [module, setModule] = useState('WIDGET')
+  const [filterRules, setFilterRules] = useState([])
   const [description, setDescription] = useState('')
   const [sql, setSql] = useState('')
   const [rows, setRows] = useState(null) // null = nothing previewed yet
@@ -42,12 +59,17 @@ export default function NewWidgetPanel({ open, onAdd }) {
 
   const dryRun = useDryRunWidget()
   const create = useCreateWidget()
+  const updateW = useUpdateWidget()
+  const { data: existing } = useWidget(editingId ? String(editingId) : null)
+  const isEditing = !!editingId
 
   const resetForm = () => {
     setName('')
     setCode('')
     setCodeEdited(false)
     setType('TABLE')
+    setModule('WIDGET')
+    setFilterRules([])
     setDescription('')
     setSql('')
     setRows(null)
@@ -59,8 +81,25 @@ export default function NewWidgetPanel({ open, onAdd }) {
   // query, closes the drawer and reopens it later finds last time's form and preview
   // still sitting there. Start clean each time the drawer opens, same as the gallery
   // does for its own selection.
+  // Editing pours the saved widget into the same form. Keyed on the fetched widget rather
+  // than on editingId, so the fill happens when the data actually arrives, not when the
+  // request is sent.
   useEffect(() => {
-    if (!open) return
+    if (!existing) return
+    setName(existing.name ?? '')
+    setCode(existing.code ?? '')
+    setCodeEdited(true) // an existing code must never be re-slugged from the name
+    setType(existing.type ?? 'TABLE')
+    setModule(existing.module ?? 'WIDGET')
+    setDescription(existing.description ?? '')
+    setSql(existing.sqlTemplate ?? '')
+    setFilterRules(fromFilterConfig(existing.filters))
+    setRows(null)
+    setCodeError(null)
+  }, [existing])
+
+  useEffect(() => {
+    if (!open || editingId) return
     resetForm()
     // Deliberately keyed on `open` alone. resetForm closes over dryRun, whose identity
     // changes when the mutation settles - listing it here would re-run this effect the
@@ -94,14 +133,33 @@ export default function NewWidgetPanel({ open, onAdd }) {
 
   const handleSave = () => {
     setCodeError(null)
+    const payload = {
+      code: code.trim(),
+      name: name.trim(),
+      description: description.trim() || undefined,
+      type,
+      module,
+      filters: toFilterConfig(filterRules),
+      sqlTemplate: sql,
+    }
+
+    if (isEditing) {
+      updateW.mutate(
+        { id: editingId, ...payload },
+        {
+          onSuccess: () => {
+            message.success('Widget updated')
+            onDoneEditing?.()
+            resetForm()
+          },
+          onError: (e) => message.error(e.message || 'Could not update the widget'),
+        },
+      )
+      return
+    }
+
     create.mutate(
-      {
-        code: code.trim(),
-        name: name.trim(),
-        description: description.trim() || undefined,
-        type,
-        sqlTemplate: sql,
-      },
+      payload,
       {
         onSuccess: (created) => {
           onAdd({
@@ -126,55 +184,82 @@ export default function NewWidgetPanel({ open, onAdd }) {
     )
   }
 
-  const sqlBoxStyle = {
-    fontFamily: 'Consolas, "Courier New", monospace',
-    fontSize: 12,
-    lineHeight: 1.5,
-  }
-
   return (
     <Form layout="vertical">
-      <Text type="secondary">
-        Write the query yourself. It runs without being saved, so you can see exactly what
-        the card will show before anything reaches the library.
-      </Text>
+      {/* The short fields pair up two to a row. The drawer is wide enough for it, and
+          stacking six full-width boxes pushed the SQL box - the one field anyone actually
+          works in - below the fold. */}
+      <Row gutter={FIELD_GUTTER}>
+        <Col xs={24} sm={12}>
+          <Form.Item label="Title" required>
+            <Input
+              value={name}
+              onChange={(e) => handleName(e.target.value)}
+              placeholder="Doctors per specialty"
+              // Short on purpose: this is the card's heading, and a longer one wraps to a
+              // second line and eats the height the chart was given.
+              maxLength={TITLE_MAX}
+              showCount
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item
+            label="Code"
+            required
+            validateStatus={codeError ? 'error' : undefined}
+            // Only the error. A code that is already taken is worth saying; that a code is
+            // unique is not something anyone needed telling.
+            help={codeError}
+          >
+            <Input
+              value={code}
+              // Fixed once saved: boards and option lookups refer to a widget by its code,
+              // so renaming it would quietly orphan them. The backend leaves it out of the
+              // update request for the same reason.
+              disabled={isEditing}
+              onChange={(e) => {
+                setCodeEdited(true)
+                setCodeError(null)
+                setCode(e.target.value)
+              }}
+              placeholder="doctors-per-specialty"
+              maxLength={150}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
 
-      <Form.Item label="Name" required style={{ marginTop: 16 }}>
-        <Input
-          value={name}
-          onChange={(e) => handleName(e.target.value)}
-          placeholder="Doctors per specialty"
-          maxLength={200}
-        />
-      </Form.Item>
+      <Row gutter={FIELD_GUTTER}>
+        <Col xs={24} sm={12}>
+          <Form.Item label="Type">
+            <Select
+              value={type}
+              onChange={setType}
+              options={TYPES.map((t) => ({ label: t, value: t }))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item label="Module">
+            <Select
+              value={module}
+              onChange={setModule}
+              // Fixed once saved, like the code. Moving a widget between modules changes
+              // who can see it - a WIDGET turned INTEGRATION vanishes from the gallery and
+              // off the boards using it, and a lookup turned WIDGET appears in the picker
+              // as a card nobody wants. Decided when it is created, not by accident after.
+              disabled={isEditing}
+              options={MODULES.map((m) => ({ label: m, value: m }))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
 
-      <Form.Item
-        label="Code"
-        required
-        validateStatus={codeError ? 'error' : undefined}
-        help={codeError || 'Unique. Used to look the widget up later.'}
-      >
-        <Input
-          value={code}
-          onChange={(e) => {
-            setCodeEdited(true)
-            setCodeError(null)
-            setCode(e.target.value)
-          }}
-          placeholder="doctors-per-specialty"
-          maxLength={150}
-        />
-      </Form.Item>
-
-      <Form.Item label="Type">
-        <Select
-          value={type}
-          onChange={setType}
-          options={TYPES.map((t) => ({ label: t, value: t }))}
-          style={{ maxWidth: 200 }}
-        />
-      </Form.Item>
-
+      {/* Description, filters and SQL stay full width - they hold long text, and half a
+          drawer is not enough to read a query in. */}
       <Form.Item label="Description">
         <Input
           value={description}
@@ -184,13 +269,14 @@ export default function NewWidgetPanel({ open, onAdd }) {
         />
       </Form.Item>
 
+      <Form.Item label="Filters">
+        <WidgetFilterEditor rules={filterRules} onChange={setFilterRules} />
+      </Form.Item>
+
       <Form.Item label="SQL" required>
-        <Input.TextArea
-          rows={6}
+        <SqlEditor
           value={sql}
-          onChange={(e) => handleSql(e.target.value)}
-          placeholder="SELECT label_column, numeric_column FROM ..."
-          style={sqlBoxStyle}
+          onChange={handleSql}
           // A dry run in flight is keyed to the SQL that was submitted. Letting the
           // developer change the text mid-flight would let a response for an already-
           // abandoned query land on top of a preview for different SQL than what's shown.
@@ -211,14 +297,20 @@ export default function NewWidgetPanel({ open, onAdd }) {
           <Button
             type="primary"
             icon={<SaveOutlined />}
-            loading={create.isPending}
+            loading={create.isPending || updateW.isPending}
             disabled={!canSave}
             onClick={handleSave}
           >
-            Save widget
+            {isEditing ? 'Update widget' : 'Save widget'}
           </Button>
-          <Button icon={<ClearOutlined />} onClick={resetForm}>
-            Discard
+          <Button
+            icon={<ClearOutlined />}
+            onClick={() => {
+              resetForm()
+              onDoneEditing?.()
+            }}
+          >
+            {isEditing ? 'Cancel edit' : 'Discard'}
           </Button>
         </Space>
 

@@ -1,7 +1,15 @@
 import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getBoards, createBoard, getBoard, saveBoard, deleteBoard } from './boardsApi.js'
-import { getWidgets, getWidgetData, deleteWidget, dryRunWidget, createWidget } from './widgetsApi.js'
+import {
+  getWidgets,
+  getWidgetData,
+  deleteWidget,
+  dryRunWidget,
+  createWidget,
+  getWidget,
+  updateWidget,
+} from './widgetsApi.js'
 
 // ---- boards ----
 
@@ -83,10 +91,20 @@ export function useDeleteWidget() {
   })
 }
 
-export function useWidgetData(idOrCode, pageSize = 50) {
+// `params` is the flat bag the engine binds by name: { doctorId: 7, fromDate: '2026-09-01' }.
+// It is part of the query key, so choosing a filter fetches fresh rows and clearing it
+// serves the unfiltered result from cache.
+export function useWidgetData(idOrCode, pageSize = 50, params, pageNo = 1, withTotal = false) {
+  const hasParams = params && Object.keys(params).length > 0
   return useQuery({
-    queryKey: ['widget-data', idOrCode, pageSize],
-    queryFn: () => getWidgetData(idOrCode, { pageSize }),
+    queryKey: ['widget-data', idOrCode, pageSize, pageNo, withTotal, hasParams ? params : undefined],
+    queryFn: () =>
+      getWidgetData(idOrCode, {
+        pageSize,
+        pageNo,
+        ...(withTotal ? { withTotal: true } : {}),
+        ...(hasParams ? params : {}),
+      }),
     enabled: !!idOrCode,
     // The grid remounts when the layout changes (see BoardGrid). Without a staleTime that
     // would refetch every widget on the board each time one card is resized.
@@ -116,5 +134,28 @@ export function useCreateWidget() {
   return useMutation({
     mutationFn: createWidget,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['widgets'] }),
+  })
+}
+
+// The full widget behind an edit form. Only fetched while a form is actually open.
+export function useWidget(idOrCode) {
+  return useQuery({
+    queryKey: ['widget', idOrCode],
+    queryFn: () => getWidget(idOrCode),
+    enabled: !!idOrCode,
+  })
+}
+
+export function useUpdateWidget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...payload }) => updateWidget(id, payload),
+    onSuccess: (_data, vars) => {
+      // The gallery lists it, the boards draw it, and the edit form itself reads it back.
+      qc.invalidateQueries({ queryKey: ['widgets'] })
+      qc.invalidateQueries({ queryKey: ['widget', String(vars.id)] })
+      qc.invalidateQueries({ queryKey: ['widget-data'] })
+      qc.invalidateQueries({ queryKey: ['board'] })
+    },
   })
 }

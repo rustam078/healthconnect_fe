@@ -6,6 +6,7 @@ import {
   MedicineBoxOutlined,
   ApartmentOutlined,
   CalendarOutlined,
+  SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation } from 'react-router-dom'
@@ -28,6 +29,7 @@ const NAV = [
   { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, label: 'Doctors' },
   { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, label: 'Specialties' },
   { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, label: 'Appointments' },
+  { key: '/settings', title: 'Settings', icon: <SettingOutlined />, label: 'Settings' },
 ]
 
 const MENU_ITEMS = NAV.map(({ key, icon, label }) => ({

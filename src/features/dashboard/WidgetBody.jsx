@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Statistic, Table, Empty, Button, Typography } from 'antd'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons'
 import { Chart as ChartJS, registerables } from 'chart.js'
+import { enumLabel } from '../../constants/enums.js'
 import { Bar, Line, Pie } from 'react-chartjs-2'
 
 ChartJS.register(...registerables) // one-time Chart.js setup
@@ -16,7 +17,15 @@ const CHART_WINDOW = 8
 // Draws a widget's rows according to its type. Shared by the board card and the gallery
 // preview card so the two can never drift apart.
 //   COUNT -> a big number, TABLE -> a table, BAR/LINE/PIE -> a chart.
-export default function WidgetBody({ type, rows = [], compact = false }) {
+export default function WidgetBody({
+  type,
+  rows = [],
+  compact = false,
+  page = 1,
+  pageSize = 5,
+  total,
+  onPageChange,
+}) {
   // Which slice of a paged chart is on screen. Declared before the early returns because
   // hooks cannot live inside a branch; the other widget types simply never read it.
   const [windowStart, setWindowStart] = useState(0)
@@ -45,7 +54,7 @@ export default function WidgetBody({ type, rows = [], compact = false }) {
         }}
       >
         <Statistic
-          value={rows[0][columns[0]]}
+          value={enumLabel(rows[0][columns[0]])}
           valueStyle={{ fontSize: compact ? 30 : 48, fontWeight: 700, lineHeight: 1.1 }}
         />
       </div>
@@ -53,14 +62,36 @@ export default function WidgetBody({ type, rows = [], compact = false }) {
   }
 
   if (type === 'TABLE') {
-    const tableCols = columns.map((c) => ({ title: c, dataIndex: c, key: c }))
+    // Cells go through enumLabel, so a stored A_NEGATIVE reads as A- here exactly as it
+    // does on the patients page. Doing it once in the renderer beats asking every query to
+    // prettify its own enums - that would be the same REPLACE() copied into every widget.
+    const tableCols = columns.map((c) => ({
+      title: c,
+      dataIndex: c,
+      key: c,
+      render: (value) => enumLabel(value),
+    }))
     const dataSource = rows.map((r, i) => ({ key: i, ...r }))
     return (
       <Table
         size="small"
         columns={tableCols}
         dataSource={dataSource}
-        pagination={compact ? false : { pageSize: 5 }}
+        // The rows ARE the page - the server was asked for exactly these. antd is told the
+        // real total so it can draw page numbers, and told not to slice anything itself.
+        pagination={
+          compact
+            ? false
+            : {
+                current: page,
+                pageSize,
+                total: total ?? rows.length,
+                onChange: onPageChange,
+                showSizeChanger: false,
+                size: 'small',
+                showTotal: (t, range) => `${range[0]}-${range[1]} of ${t}`,
+              }
+        }
         scroll={{ x: true }}
       />
     )
@@ -80,7 +111,7 @@ export default function WidgetBody({ type, rows = [], compact = false }) {
   const shown = paged ? rows.slice(start, start + CHART_WINDOW) : rows
 
   const chartData = {
-    labels: shown.map((r) => r[labelCol]),
+    labels: shown.map((r) => enumLabel(r[labelCol])),
     datasets: [
       {
         label: valueCol,

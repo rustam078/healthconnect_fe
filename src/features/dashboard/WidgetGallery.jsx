@@ -25,6 +25,10 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
   const [selected, setSelected] = useState([]) // gallery widget objects, not ids
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('library')
+  // The widget being edited, if any. Editing reuses the New widget tab rather than a
+  // second form: the fields, the preview and the save rules are identical, and two forms
+  // that must stay in step is one too many.
+  const [editingId, setEditingId] = useState(null)
 
   // Start clean each time the gallery opens - a stale selection from last time would be
   // added silently, and a stale search would hide most of the library for no visible
@@ -34,6 +38,7 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
     setSelected([])
     setSearch('')
     setTab('library')
+    setEditingId(null)
   }, [open])
 
   // Filtering happens here rather than on the server: the gallery already holds every
@@ -87,6 +92,10 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
             disabled={existingWidgetIds.includes(widget.id)}
             onToggle={toggle}
             onDelete={handleDelete}
+            onEdit={(w) => {
+              setEditingId(w.id)
+              setTab('new')
+            }}
           />
         </Col>
       ))}
@@ -148,8 +157,15 @@ export default function WidgetGallery({ open, onClose, onConfirm, existingWidget
             ? [
                 {
                   key: 'new',
-                  label: 'New widget',
-                  children: <NewWidgetPanel open={open} onAdd={addToSelection} />,
+                  label: editingId ? 'Edit widget' : 'New widget',
+                  children: (
+                    <NewWidgetPanel
+                      open={open}
+                      onAdd={addToSelection}
+                      editingId={editingId}
+                      onDoneEditing={() => setEditingId(null)}
+                    />
+                  ),
                 },
               ]
             : []),

@@ -35,6 +35,8 @@ export default function BoardGrid({
   editable = false,
   onLayoutChange,
   onRemove,
+  boardFilters,
+  boardFilterLabels,
 }) {
   const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true })
 
@@ -82,7 +84,13 @@ export default function BoardGrid({
         >
           {items.map((item) => (
             <div key={String(item.widgetId)}>
-              <WidgetCard item={item} editable={editable} onRemove={onRemove} />
+              <WidgetCard
+                item={item}
+                editable={editable}
+                onRemove={onRemove}
+                boardFilters={boardFilters}
+                boardFilterLabels={boardFilterLabels}
+              />
             </div>
           ))}
         </GridLayout>

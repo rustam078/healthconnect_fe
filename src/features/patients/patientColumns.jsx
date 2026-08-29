@@ -1,9 +1,7 @@
 import { Button, Popconfirm, Space, Tag } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS } from '../../constants/enums.js'
+import { enumLabel } from '../../constants/enums.js'
 
-const GENDER_LABEL = Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label]))
-const BLOOD_LABEL = Object.fromEntries(BLOOD_GROUP_OPTIONS.map((o) => [o.value, o.label]))
 const GENDER_COLOR = { MALE: 'blue', FEMALE: 'magenta', OTHER: 'default' }
 
 const dash = <span style={{ color: '#9AA7A3' }}>—</span>
@@ -22,7 +20,7 @@ export function getPatientColumns({ onEdit, onDelete }) {
       key: 'gender',
       width: 110,
       render: (v) =>
-        v ? <Tag color={GENDER_COLOR[v] || 'default'}>{GENDER_LABEL[v] || v}</Tag> : dash,
+        v ? <Tag color={GENDER_COLOR[v] || 'default'}>{enumLabel(v)}</Tag> : dash,
     },
     { title: 'Age', dataIndex: 'age', key: 'age', width: 80 },
     { title: 'Phone', dataIndex: 'phone', key: 'phone', width: 140 },
@@ -32,7 +30,7 @@ export function getPatientColumns({ onEdit, onDelete }) {
       dataIndex: 'bloodGroup',
       key: 'bloodGroup',
       width: 95,
-      render: (v) => (v ? <Tag color="cyan">{BLOOD_LABEL[v] || v}</Tag> : dash),
+      render: (v) => (v ? <Tag color="cyan">{enumLabel(v)}</Tag> : dash),
     },
     {
       title: 'Actions',

@@ -24,11 +24,10 @@ import {
 import { useSpecialties } from '../specialties/specialtiesHooks.js'
 import WeekCalendar from './WeekCalendar.jsx'
 import AvailabilityEditorModal from './AvailabilityEditorModal.jsx'
-import { GENDER_OPTIONS } from '../../constants/enums.js'
+import { enumLabel } from '../../constants/enums.js'
 import { formatCurrency, formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
-const GENDER_LABEL = Object.fromEntries(GENDER_OPTIONS.map((o) => [o.value, o.label]))
 
 export default function DoctorDetailPage() {
   const { message } = App.useApp()
@@ -110,7 +109,7 @@ export default function DoctorDetailPage() {
       <Card title="Profile">
         <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} size="small" colon={false}>
           <Descriptions.Item label="Gender">
-            {GENDER_LABEL[doctor.gender] || doctor.gender || '—'}
+            {enumLabel(doctor.gender) || '—'}
           </Descriptions.Item>
           <Descriptions.Item label="Age">{doctor.age ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Date of birth">{formatDate(doctor.dateOfBirth) || '—'}</Descriptions.Item>

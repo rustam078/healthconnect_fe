@@ -20,3 +20,9 @@ export function approveWidget(id) {
   return axiosClient.put(`/widgets/${id}/approve`)
 }
 
+// The curated question -> SQL pairs. Two jobs on the server: they are sent to the AI as
+// few-shot examples, AND an exact question match skips the AI entirely and reuses the
+// stored SQL (SqlDraftService step 1). Here they are the sample-prompt list.
+export function getPromptExamples() {
+  return axiosClient.get('/ai/examples')
+}
