@@ -1,4 +1,5 @@
 import { Button, Popconfirm, Space, Tag } from 'antd'
+import { Link } from 'react-router-dom'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { enumLabel } from '../../constants/enums.js'
 
@@ -10,9 +11,14 @@ export function getPatientColumns({ onEdit, onDelete }) {
   return [
     { title: 'Code', dataIndex: 'patientCode', key: 'patientCode', width: 130 },
     {
+      // The way into the patient record, same as the doctors table. A name is what people
+      // reach for, so it is the link rather than an extra "View" button in the actions.
       title: 'Name',
       key: 'name',
-      render: (_, r) => [r.firstName, r.lastName].filter(Boolean).join(' ') || dash,
+      render: (_, r) => {
+        const name = [r.firstName, r.lastName].filter(Boolean).join(' ')
+        return name ? <Link to={`/patients/${r.id}`}>{name}</Link> : dash
+      },
     },
     {
       title: 'Gender',

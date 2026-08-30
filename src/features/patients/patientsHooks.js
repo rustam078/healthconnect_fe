@@ -31,7 +31,12 @@ export function useUpdatePatient() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, payload }) => updatePatient(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['patients'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] })
+      // The record page reads the same patient under its own key. Without this, editing
+      // from that page saved the change and then went on showing the old values.
+      qc.invalidateQueries({ queryKey: ['patientDetails'] })
+    },
   })
 }
 
