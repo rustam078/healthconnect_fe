@@ -125,12 +125,14 @@ export default function PatientDetailPage() {
       <Row gutter={[16, 16]}>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="Total visits" value={stats.totalVisits ?? 0} />
+            {/* Appointments, not visits: this counts every booking including cancelled
+                ones and ones still to come, which is what the table below lists too. */}
+            <Statistic title="Total appointments" value={stats.totalAppointments ?? 0} />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small">
-            <Statistic title="Upcoming" value={stats.upcomingVisits ?? 0} />
+            <Statistic title="Upcoming" value={stats.upcomingAppointments ?? 0} />
           </Card>
         </Col>
         <Col xs={12} md={6}>

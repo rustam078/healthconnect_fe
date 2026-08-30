@@ -9,6 +9,7 @@ import { getDoctorDetails } from '../doctors/doctorDetailApi.js'
 import { getAppointmentsByDoctor } from './appointmentsApi.js'
 import TimeOfDayField from './TimeOfDayField.jsx'
 import { buildDaySegments, dayOfWeekOf, fmt12 } from './slots.js'
+import PersonSelect from './PersonSelect.jsx'
 import { APPOINTMENT_LOOK } from './DoctorDayColumn.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -35,25 +36,21 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
   const createMutation = useCreateAppointment()
   const { token } = theme.useToken()
 
-  const patientsQuery = useQuery({
-    queryKey: ['appt-patients'],
-    queryFn: () => getPatients({ page: 0, size: 100 }),
-    enabled: open,
-  })
-
-  // The board behind this drawer only holds the doctors scrolled into view so far, so the
-  // list is fetched here instead of being handed down: you must be able to book any doctor,
-  // not only the ones that happen to be on screen. One request, and only while open.
-  const doctorsQuery = useQuery({
-    queryKey: ['appt-doctor-options'],
-    queryFn: () => getDoctors({ page: 0, size: 200 }),
-    enabled: open,
-  })
-
-  const doctorOptions = (doctorsQuery.data?.content ?? []).map((d) => ({
+  // Doctors and patients are NOT preloaded here any more.
+  //
+  // A single page of them (100 patients, 200 doctors) meant most of the 5,000 patients
+  // could not be picked at all: the dropdown filtered the rows it held, so typing a name
+  // outside that page found nothing. PersonSelect asks the database instead, so anyone in
+  // the table is reachable by typing.
+  const toDoctorOption = (d) => ({
     label: `${[d.firstName, d.lastName].filter(Boolean).join(' ')} — ${d.qualification}`,
     value: d.id,
-  }))
+  })
+  const toPatientOption = (p) => ({
+    label: `${[p.firstName, p.lastName].filter(Boolean).join(' ')} (${p.patientCode})`,
+    value: p.id,
+  })
+
   // Watched, not read at submit time: the slot list has to follow whatever is in the form
   // right now, or it would offer times for the doctor you were looking at a moment ago.
   const pickedDoctorId = Form.useWatch('doctorId', form)
@@ -100,22 +97,16 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
   // Only slots that are both free and still ahead count as bookable.
   const freeCount = dayCells.filter((c) => c.kind === 'free' && !c.past).length
 
-  // The taken stretches say who has them, when we happen to know. The name comes from the
-  // page of patients already loaded for the Patient field, so it costs nothing extra - and
-  // returns null rather than an internal id for anyone outside that page, since "Patient
-  // #1356" tells a receptionist less than saying nothing at all.
+  // Who holds a taken slot. The appointment itself now carries the name, so this reads it
+  // off the booking rather than hunting for the id in a separately loaded list - which
+  // used to come up empty for any patient outside the page that had been fetched.
   const patientNameOf = (id) => {
-    const p = (patientsQuery.data?.content ?? []).find((x) => x.id === id)
-    return p ? [p.firstName, p.lastName].filter(Boolean).join(' ') : null
+    const booked = (bookedQuery.data?.content ?? []).find((a) => a.patientId === id)
+    return booked?.patientName || null
   }
 
   const slotsLoading = availabilityQuery.isFetching || bookedQuery.isFetching
   const readyForSlots = !!pickedDoctorId && !!pickedDate && !!pickedDuration
-
-  const patientOptions = (patientsQuery.data?.content ?? []).map((p) => ({
-    label: `${[p.firstName, p.lastName].filter(Boolean).join(' ')} (${p.patientCode})`,
-    value: p.id,
-  }))
 
   const handleSubmit = async () => {
     let values
@@ -183,11 +174,12 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
           label="Doctor"
           rules={[{ required: true, message: 'Select a doctor' }]}
         >
-          <Select
-            showSearch
-            optionFilterProp="label"
+          <PersonSelect
+            queryKey="appt-doctor-options"
             placeholder="Select doctor"
-            options={doctorOptions}
+            enabled={open}
+            fetchPage={getDoctors}
+            toOption={toDoctorOption}
           />
         </Form.Item>
 
@@ -196,12 +188,12 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
           label="Patient"
           rules={[{ required: true, message: 'Select a patient' }]}
         >
-          <Select
-            showSearch
-            optionFilterProp="label"
+          <PersonSelect
+            queryKey="appt-patient-options"
             placeholder="Select patient"
-            loading={patientsQuery.isFetching}
-            options={patientOptions}
+            enabled={open}
+            fetchPage={getPatients}
+            toOption={toPatientOption}
           />
         </Form.Item>
 

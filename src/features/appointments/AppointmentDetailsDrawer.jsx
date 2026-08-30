@@ -14,10 +14,9 @@ import {
   App,
 } from 'antd'
 import { EditOutlined, CloseCircleOutlined, CheckOutlined } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { getPatients } from '../patients/patientsApi.js'
 import { getDoctors } from '../doctors/doctorsApi.js'
+import PersonSelect from './PersonSelect.jsx'
 import {
   useUpdateAppointmentStatus,
   useRescheduleAppointment,
@@ -37,18 +36,12 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
   const [form] = Form.useForm()
   const [rescheduling, setRescheduling] = useState(false)
 
-  const patientsQuery = useQuery({
-    queryKey: ['appt-patients'],
-    queryFn: () => getPatients({ page: 0, size: 100 }),
-    enabled: open,
-  })
-
-  // The board holds only the doctors scrolled into view, so the list is fetched here:
-  // moving an appointment to a doctor who happens to be off screen must still be possible.
-  const doctorsQuery = useQuery({
-    queryKey: ['appt-doctor-options'],
-    queryFn: () => getDoctors({ page: 0, size: 200 }),
-    enabled: open && rescheduling,
+  // No preloaded page of patients any more: the appointment itself carries the patient's
+  // name, so a page of 100 was being fetched to look up one string - and came up empty for
+  // anyone outside it, leaving "Patient #1356" on screen.
+  const toDoctorOption = (d) => ({
+    label: `${[d.firstName, d.lastName].filter(Boolean).join(' ')} — ${d.qualification}`,
+    value: d.id,
   })
 
   const updateStatus = useUpdateAppointmentStatus()
@@ -63,17 +56,14 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
     if (!open) setRescheduling(false)
   }, [open])
 
-  const patient = (patientsQuery.data?.content ?? []).find((p) => p.id === a.patientId)
-  const patientName = patient
-    ? `${[patient.firstName, patient.lastName].filter(Boolean).join(' ')} (${patient.patientCode})`
-    : a.patientId != null
-      ? `Patient #${a.patientId}`
-      : '—'
+  // Straight off the appointment. It falls back to the id only if the server sent no name
+  // at all, which no longer happens for a booking that has a patient.
+  const patientName = a.patientName || (a.patientId != null ? `Patient #${a.patientId}` : '—')
+  // The board hands the doctor down when it has one; otherwise the appointment's own name
+  // covers it, so an appointment opened from anywhere still names its doctor.
   const doctorName = doctor
     ? [doctor.firstName, doctor.lastName].filter(Boolean).join(' ')
-    : a.doctorId != null
-      ? `Doctor #${a.doctorId}`
-      : '—'
+    : a.doctorName || (a.doctorId != null ? `Doctor #${a.doctorId}` : '—')
   const range =
     a.startTime && a.endTime ? `${fmt12(a.startTime.slice(0, 5))} – ${fmt12(a.endTime.slice(0, 5))}` : '—'
 
@@ -201,14 +191,12 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
               label="Doctor"
               rules={[{ required: true, message: 'Select a doctor' }]}
             >
-              <Select
-                showSearch
-                optionFilterProp="label"
-                loading={doctorsQuery.isLoading}
-                options={(doctorsQuery.data?.content ?? []).map((d) => ({
-                  label: `${[d.firstName, d.lastName].filter(Boolean).join(' ')} — ${d.qualification}`,
-                  value: d.id,
-                }))}
+              <PersonSelect
+                queryKey="appt-doctor-options"
+                placeholder="Select doctor"
+                enabled={open && rescheduling}
+                fetchPage={getDoctors}
+                toOption={toDoctorOption}
               />
             </Form.Item>
             <Form.Item
