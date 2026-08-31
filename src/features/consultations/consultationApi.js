@@ -10,3 +10,12 @@ export function createConsultation(appointmentId, payload) {
 export function getConsultation(appointmentId) {
   return axiosClient.get(`/appointments/${appointmentId}/consultation`)
 }
+
+// GET /appointments/{id}/consultation/pdf → the visit as an A4 PDF (Blob). responseType
+// 'blob' keeps axios from parsing the bytes as JSON; the envelope interceptor passes a Blob
+// straight through untouched.
+export function getConsultationPdf(appointmentId) {
+  return axiosClient.get(`/appointments/${appointmentId}/consultation/pdf`, {
+    responseType: 'blob',
+  })
+}

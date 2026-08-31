@@ -202,7 +202,9 @@ export default function PatientDetailPage() {
           // has nothing to open.
           expandable={{
             rowExpandable: (r) => r.status !== 'CANCELLED',
-            expandedRowRender: (r) => <ConsultationView appointmentId={r.id} enabled />,
+            expandedRowRender: (r) => (
+              <ConsultationView appointmentId={r.id} enabled fileLabel={fullName} />
+            ),
           }}
           locale={{
             emptyText: (

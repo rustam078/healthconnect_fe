@@ -242,7 +242,9 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
         />
       )}
 
-      {hasConsultation && <ConsultationView appointmentId={a.id} enabled={open} />}
+      {hasConsultation && (
+        <ConsultationView appointmentId={a.id} enabled={open} fileLabel={patientName} />
+      )}
 
       {rescheduling && (
         <>
