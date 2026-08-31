@@ -18,6 +18,7 @@ import {
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons'
 import { usePatientDetails, usePatientAppointments } from './patientDetailHooks.js'
 import PatientFormModal from './PatientFormModal.jsx'
+import ConsultationView from '../consultations/ConsultationView.jsx'
 import { enumLabel } from '../../constants/enums.js'
 import { formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
@@ -195,6 +196,14 @@ export default function PatientDetailPage() {
           loading={visits.isFetching}
           columns={visitColumns}
           dataSource={visits.data?.content ?? []}
+          // Expand a visit to read what the doctor recorded - complaint, diagnosis and the
+          // prescription. The consultation is fetched only when a row is opened, so a page
+          // of visits does not fire a query per row. A cancelled visit never happened, so it
+          // has nothing to open.
+          expandable={{
+            rowExpandable: (r) => r.status !== 'CANCELLED',
+            expandedRowRender: (r) => <ConsultationView appointmentId={r.id} enabled />,
+          }}
           locale={{
             emptyText: (
               <Empty

@@ -5,7 +5,7 @@ import {
   Tag,
   Button,
   Space,
-  Popconfirm,
+  Dropdown,
   Divider,
   Form,
   Select,
@@ -13,10 +13,19 @@ import {
   Typography,
   App,
 } from 'antd'
-import { EditOutlined, CloseCircleOutlined, CheckOutlined } from '@ant-design/icons'
+import {
+  EditOutlined,
+  CloseCircleOutlined,
+  CheckOutlined,
+  FileTextOutlined,
+  MoreOutlined,
+} from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getDoctors } from '../doctors/doctorsApi.js'
 import PersonSelect from './PersonSelect.jsx'
+import ConsultationForm from '../consultations/ConsultationForm.jsx'
+import ConsultationView from '../consultations/ConsultationView.jsx'
+import { useConsultation } from '../consultations/consultationHooks.js'
 import {
   useUpdateAppointmentStatus,
   useRescheduleAppointment,
@@ -32,9 +41,10 @@ const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 const DURATION_OPTIONS = [15, 30, 45, 60].map((v) => ({ label: `${v} minutes`, value: v }))
 
 export default function AppointmentDetailsDrawer({ open, appointment, doctor, onClose }) {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [form] = Form.useForm()
   const [rescheduling, setRescheduling] = useState(false)
+  const [recording, setRecording] = useState(false)
 
   // No preloaded page of patients any more: the appointment itself carries the patient's
   // name, so a page of 100 was being fetched to look up one string - and came up empty for
@@ -50,10 +60,18 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
 
   const a = appointment || {}
 
+  // Is a consultation already on record for this visit? Drives both the read-only view and
+  // whether the "Record consultation" button is still on offer.
+  const { data: consultation, isLoading: consultationLoading } = useConsultation(a.id, open)
+  const hasConsultation = !!consultation
+
   // Reopening the drawer on another appointment must not leave the previous one's form
   // half-open with its values in it.
   useEffect(() => {
-    if (!open) setRescheduling(false)
+    if (!open) {
+      setRescheduling(false)
+      setRecording(false)
+    }
   }, [open])
 
   // Straight off the appointment. It falls back to the id only if the server sent no name
@@ -129,16 +147,69 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
       onError: (e) => message.error(getErrorMessage(e)),
     })
 
+  // Cancel is destructive and lives in the overflow menu, so it confirms in a dialog rather
+  // than the inline Popconfirm a footer button would use.
+  const confirmCancel = () =>
+    modal.confirm({
+      title: 'Cancel this appointment?',
+      content: 'The slot goes back on offer.',
+      okText: 'Cancel it',
+      okButtonProps: { danger: true },
+      cancelText: 'Keep it',
+      onOk: handleCancel,
+    })
+
+  // Update and cancel are the secondary actions - they live behind the header's overflow
+  // menu so the footer is left for the two primary ones (record / complete).
+  const moreItems = [
+    {
+      key: 'update',
+      icon: <EditOutlined />,
+      label: 'Update appointment',
+      disabled: rescheduling,
+      onClick: startReschedule,
+    },
+    {
+      key: 'cancel',
+      icon: <CloseCircleOutlined />,
+      label: 'Cancel appointment',
+      danger: true,
+      onClick: confirmCancel,
+    },
+  ]
+
   return (
     <Drawer
       open={open}
-      width={440}
+      width={680}
       title="Appointment details"
       onClose={onClose}
       destroyOnHidden
+      extra={
+        isLive && (
+          <Dropdown menu={{ items: moreItems }} trigger={['click']} placement="bottomRight">
+            <Button icon={<MoreOutlined />} loading={cancel.isPending}>
+              More
+            </Button>
+          </Dropdown>
+        )
+      }
       footer={
         isLive && (
           <Space style={{ width: '100%', justifyContent: 'flex-end' }} wrap>
+            {!hasConsultation && !consultationLoading && (
+              <Button
+                type="primary"
+                icon={<FileTextOutlined />}
+                disabled={recording}
+                onClick={() => {
+                  setRescheduling(false)
+                  setRecording(true)
+                }}
+              >
+                Record consultation
+              </Button>
+            )}
             <Button
               icon={<CheckOutlined />}
               loading={updateStatus.isPending}
@@ -146,20 +217,6 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
             >
               Mark completed
             </Button>
-            <Button icon={<EditOutlined />} disabled={rescheduling} onClick={startReschedule}>
-              Update appointment
-            </Button>
-            <Popconfirm
-              title="Cancel this appointment?"
-              description="The slot goes back on offer."
-              okText="Cancel it"
-              okButtonProps={{ danger: true }}
-              onConfirm={handleCancel}
-            >
-              <Button danger icon={<CloseCircleOutlined />} loading={cancel.isPending}>
-                Cancel appointment
-              </Button>
-            </Popconfirm>
           </Space>
         )
       }
@@ -176,6 +233,16 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
           {a.status ? <Tag color={STATUS_COLOR[a.status] || 'default'}>{a.status}</Tag> : '—'}
         </Descriptions.Item>
       </Descriptions>
+
+      {recording && (
+        <ConsultationForm
+          appointmentId={a.id}
+          onDone={() => setRecording(false)}
+          onCancel={() => setRecording(false)}
+        />
+      )}
+
+      {hasConsultation && <ConsultationView appointmentId={a.id} enabled={open} />}
 
       {rescheduling && (
         <>
