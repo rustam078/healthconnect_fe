@@ -9,20 +9,33 @@ import SpecialtyListPage from '../features/specialties/SpecialtyListPage.jsx'
 import AppointmentsPage from '../features/appointments/AppointmentsPage.jsx'
 import SettingListPage from '../features/settings/SettingListPage.jsx'
 import NotFoundPage from '../components/common/NotFoundPage.jsx'
+import LoginPage from '../features/auth/LoginPage.jsx'
+import RequireAuth from './RequireAuth.jsx'
+import RequirePermission from './RequirePermission.jsx'
+
+// Wraps a route element with its module VIEW gate.
+const gated = (module, element) => (
+  <RequirePermission module={module}>{element}</RequirePermission>
+)
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'patients', element: <PatientListPage /> },
-      { path: 'patients/:patientId', element: <PatientDetailPage /> },
-      { path: 'doctors', element: <DoctorListPage /> },
-      { path: 'doctors/:doctorId', element: <DoctorDetailPage /> },
-      { path: 'specialties', element: <SpecialtyListPage /> },
-      { path: 'appointments', element: <AppointmentsPage /> },
-      { path: 'settings', element: <SettingListPage /> },
+      { index: true, element: gated('DASHBOARD', <DashboardPage />) },
+      { path: 'patients', element: gated('PATIENTS', <PatientListPage />) },
+      { path: 'patients/:patientId', element: gated('PATIENTS', <PatientDetailPage />) },
+      { path: 'doctors', element: gated('DOCTORS', <DoctorListPage />) },
+      { path: 'doctors/:doctorId', element: gated('DOCTORS', <DoctorDetailPage />) },
+      { path: 'specialties', element: gated('SPECIALTIES', <SpecialtyListPage />) },
+      { path: 'appointments', element: gated('APPOINTMENTS', <AppointmentsPage />) },
+      { path: 'settings', element: gated('SETTINGS', <SettingListPage />) },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

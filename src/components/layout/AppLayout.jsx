@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Menu, Avatar } from 'antd'
+import { Layout, Menu, Avatar, Dropdown } from 'antd'
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -8,9 +8,13 @@ import {
   CalendarOutlined,
   SettingOutlined,
   UserOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import { BRAND } from '../../app/theme.js'
+import { usePermission } from '../../features/auth/permissions.js'
+import { loggedOut, selectUser } from '../../store/authSlice.js'
 
 const { Header, Sider, Content } = Layout
 
@@ -24,23 +28,32 @@ const SIDER_COLLAPSED = 76
 const FULL_HEIGHT = 'calc(100vh / var(--ui-scale))'
 
 const NAV = [
-  { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients' },
-  { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, label: 'Doctors' },
-  { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, label: 'Specialties' },
-  { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, label: 'Appointments' },
-  { key: '/settings', title: 'Settings', icon: <SettingOutlined />, label: 'Settings' },
+  { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard', module: 'DASHBOARD' },
+  { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients', module: 'PATIENTS' },
+  { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, label: 'Doctors', module: 'DOCTORS' },
+  { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, label: 'Specialties', module: 'SPECIALTIES' },
+  { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, label: 'Appointments', module: 'APPOINTMENTS' },
+  { key: '/settings', title: 'Settings', icon: <SettingOutlined />, label: 'Settings', module: 'SETTINGS' },
 ]
-
-const MENU_ITEMS = NAV.map(({ key, icon, label }) => ({
-  key,
-  icon,
-  label: <Link to={key}>{label}</Link>,
-}))
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const user = useSelector(selectUser)
+  const { canView } = usePermission()
+
+  const menuItems = NAV.filter((n) => canView(n.module)).map(({ key, icon, label }) => ({
+    key,
+    icon,
+    label: <Link to={key}>{label}</Link>,
+  }))
+
+  const handleLogout = () => {
+    dispatch(loggedOut())
+    navigate('/login', { replace: true })
+  }
 
   const selectedKey =
     NAV.map((i) => i.key)
@@ -106,7 +119,7 @@ export default function AppLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={MENU_ITEMS}
+          items={menuItems}
           style={{ borderInlineEnd: 'none', paddingTop: 8 }}
         />
       </Sider>
@@ -135,14 +148,23 @@ export default function AppLayout() {
             </div>
             <div style={{ fontSize: 12, color: '#7C8B87' }}>HealthConnect Admin</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar
-              size={36}
-              style={{ background: '#E6F4F1', color: BRAND.primary }}
-              icon={<UserOutlined />}
-            />
-            <span style={{ color: '#33413E', fontWeight: 500 }}>Guest</span>
-          </div>
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                { key: 'logout', icon: <LogoutOutlined />, label: 'Log out', onClick: handleLogout },
+              ],
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <Avatar
+                size={36}
+                style={{ background: '#E6F4F1', color: BRAND.primary }}
+                icon={<UserOutlined />}
+              />
+              <span style={{ color: '#33413E', fontWeight: 500 }}>{user?.username || 'Guest'}</span>
+            </div>
+          </Dropdown>
         </Header>
 
         {/* minHeight keeps the tinted page background covering the full viewport on short

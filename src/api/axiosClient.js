@@ -1,14 +1,16 @@
 import axios from 'axios'
+import { store } from '../store/store.js'
+import { loggedOut } from '../store/authSlice.js'
 
 const axiosClient = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Auth stub: JWT header will be attached here once Spring Security lands.
+// Attach the stored JWT on every request.
 axiosClient.interceptors.request.use((config) => {
-  // const token = getToken()
-  // if (token) config.headers.Authorization = `Bearer ${token}`
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
@@ -22,6 +24,11 @@ axiosClient.interceptors.response.use(
     return body
   },
   (error) => {
+    // Session expired or missing: clear auth state and route to login.
+    if (error.response?.status === 401) {
+      store.dispatch(loggedOut())
+      if (window.location.pathname !== '/login') window.location.assign('/login')
+    }
     const body = error.response?.data
     const message =
       body?.message ||
