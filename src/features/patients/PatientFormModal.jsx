@@ -1,6 +1,8 @@
-import { Modal, Form, Input, Select, DatePicker, Row, Col, App } from 'antd'
+import { Modal, Form, Input, Select, DatePicker, Row, Col, Alert, App } from 'antd'
 import dayjs from 'dayjs'
 import { useCreatePatient, useUpdatePatient } from './patientsHooks.js'
+import { useUsers, useCreateUser } from '../users/usersHooks.js'
+import LoginAccountFields, { buildLoginPayload } from '../../components/common/LoginAccountFields.jsx'
 import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS } from '../../constants/enums.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -14,12 +16,18 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
   const [form] = Form.useForm()
   const createMutation = useCreatePatient()
   const updateMutation = useUpdatePatient()
+  const createUserMutation = useCreateUser()
+  const { data: users } = useUsers()
   const isEdit = mode === 'edit'
-  const submitting = createMutation.isPending || updateMutation.isPending
+  const submitting =
+    createMutation.isPending || updateMutation.isPending || createUserMutation.isPending
 
   // Backend patient-update only changes phone/email/address/bloodGroup, so
   // identity fields are shown read-only in edit mode.
   const lockIdentity = isEdit
+
+  // The login already linked to this patient, if any (so edit can offer to create one).
+  const linkedUser = isEdit ? (users ?? []).find((u) => u.patientId === initialValues?.id) : null
 
   const handleOk = async () => {
     let values
@@ -30,6 +38,26 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
     }
     const onError = (e) => message.error(getErrorMessage(e))
 
+    // After a successful save, create the login too if one was requested and none exists yet.
+    const finish = (successMsg) => {
+      const login = buildLoginPayload(values)
+      if (login && !linkedUser) {
+        createUserMutation.mutate(
+          { ...login, patientId: initialValues.id },
+          {
+            onSuccess: () => {
+              message.success(`${successMsg} · login created`)
+              onClose()
+            },
+            onError,
+          },
+        )
+      } else {
+        message.success(successMsg)
+        onClose()
+      }
+    }
+
     if (isEdit) {
       const payload = {
         phone: values.phone?.trim(),
@@ -39,13 +67,7 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
       }
       updateMutation.mutate(
         { id: initialValues.id, payload },
-        {
-          onSuccess: () => {
-            message.success('Patient updated')
-            onClose()
-          },
-          onError,
-        },
+        { onSuccess: () => finish('Patient updated'), onError },
       )
     } else {
       const payload = {
@@ -57,6 +79,7 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
         email: values.email.trim(),
         address: values.address?.trim() || null,
         bloodGroup: values.bloodGroup || null,
+        login: buildLoginPayload(values),
       }
       createMutation.mutate(payload, {
         onSuccess: () => {
@@ -193,6 +216,17 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
         >
           <Input.TextArea rows={2} placeholder="Optional address" />
         </Form.Item>
+
+        {isEdit && linkedUser ? (
+          <Alert
+            type="info"
+            showIcon
+            message={`Login account: ${linkedUser.username}`}
+            style={{ marginBottom: 8 }}
+          />
+        ) : (
+          <LoginAccountFields form={form} defaultRoleName="CUSTOMER" />
+        )}
       </Form>
     </Modal>
   )

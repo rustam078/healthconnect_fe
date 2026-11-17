@@ -1,6 +1,9 @@
-import { Modal, Form, Input, InputNumber, Select, DatePicker, Row, Col, App } from 'antd'
+import { Modal, Form, Input, InputNumber, Select, DatePicker, Row, Col, Alert, App } from 'antd'
 import dayjs from 'dayjs'
 import { useCreateDoctor, useUpdateDoctor } from './doctorsHooks.js'
+import { useSpecialties } from '../specialties/specialtiesHooks.js'
+import { useUsers, useCreateUser } from '../users/usersHooks.js'
+import LoginAccountFields, { buildLoginPayload } from '../../components/common/LoginAccountFields.jsx'
 import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -14,11 +17,18 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
   const [form] = Form.useForm()
   const createMutation = useCreateDoctor()
   const updateMutation = useUpdateDoctor()
+  const createUserMutation = useCreateUser()
+  const { data: specialtyData } = useSpecialties({ size: 200 })
+  const { data: users } = useUsers()
   const isEdit = mode === 'edit'
-  const submitting = createMutation.isPending || updateMutation.isPending
+  const submitting =
+    createMutation.isPending || updateMutation.isPending || createUserMutation.isPending
 
   // Backend doctor-update ignores gender/dateOfBirth, so they are read-only in edit mode.
   const lockIdentity = isEdit
+
+  // The login already linked to this doctor, if any (so edit can offer to create one).
+  const linkedUser = isEdit ? (users ?? []).find((u) => u.doctorId === initialValues?.id) : null
 
   const handleOk = async () => {
     let values
@@ -28,6 +38,26 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
       return
     }
     const onError = (e) => message.error(getErrorMessage(e))
+
+    // After a successful save, create the login too if one was requested and none exists yet.
+    const finish = (successMsg) => {
+      const login = buildLoginPayload(values)
+      if (login && !linkedUser) {
+        createUserMutation.mutate(
+          { ...login, doctorId: initialValues.id },
+          {
+            onSuccess: () => {
+              message.success(`${successMsg} · login created`)
+              onClose()
+            },
+            onError,
+          },
+        )
+      } else {
+        message.success(successMsg)
+        onClose()
+      }
+    }
 
     if (isEdit) {
       const payload = {
@@ -41,13 +71,7 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
       }
       updateMutation.mutate(
         { id: initialValues.id, payload },
-        {
-          onSuccess: () => {
-            message.success('Doctor updated')
-            onClose()
-          },
-          onError,
-        },
+        { onSuccess: () => finish('Doctor updated'), onError },
       )
     } else {
       const payload = {
@@ -60,6 +84,8 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
         qualification: values.qualification.trim(),
         experienceYears: values.experienceYears,
         consultationFee: values.consultationFee,
+        specialtyIds: values.specialtyIds ?? [],
+        login: buildLoginPayload(values),
       }
       createMutation.mutate(payload, {
         onSuccess: () => {
@@ -214,6 +240,29 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
             </Form.Item>
           </Col>
         </Row>
+
+        {!isEdit && (
+          <Form.Item name="specialtyIds" label="Specialties">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Select specialties"
+              optionFilterProp="label"
+              options={(specialtyData?.content ?? []).map((s) => ({ value: s.id, label: s.name }))}
+            />
+          </Form.Item>
+        )}
+
+        {isEdit && linkedUser ? (
+          <Alert
+            type="info"
+            showIcon
+            message={`Login account: ${linkedUser.username}`}
+            style={{ marginBottom: 8 }}
+          />
+        ) : (
+          <LoginAccountFields form={form} defaultRoleName="DOCTOR" />
+        )}
       </Form>
     </Modal>
   )

@@ -22,6 +22,7 @@ import {
   useRemoveSpecialty,
 } from './doctorDetailHooks.js'
 import { useSpecialties } from '../specialties/specialtiesHooks.js'
+import { useUsers } from '../users/usersHooks.js'
 import WeekCalendar from './WeekCalendar.jsx'
 import AvailabilityEditorModal from './AvailabilityEditorModal.jsx'
 import { enumLabel } from '../../constants/enums.js'
@@ -36,6 +37,7 @@ export default function DoctorDetailPage() {
   const doctorId = Number(param)
 
   const { data, isLoading, isError, error } = useDoctorDetails(doctorId)
+  const { data: users } = useUsers()
   const allSpecialties = useSpecialties({ search: '', page: 1, size: 100 })
   const assignMutation = useAssignSpecialties(doctorId)
   const removeMutation = useRemoveSpecialty(doctorId)
@@ -62,6 +64,7 @@ export default function DoctorDetailPage() {
   }
 
   const doctor = data?.doctor ?? {}
+  const linkedUser = (users ?? []).find((u) => u.doctorId === doctorId)
   const assigned = data?.specialties ?? []
   const availability = data?.availabilityToSave ?? []
   const assignedIds = new Set(assigned.map((s) => s.id))
@@ -121,6 +124,7 @@ export default function DoctorDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="Phone">{doctor.phone || '—'}</Descriptions.Item>
           <Descriptions.Item label="Email">{doctor.email || '—'}</Descriptions.Item>
+          <Descriptions.Item label="Login">{linkedUser?.username || '— (no account)'}</Descriptions.Item>
         </Descriptions>
       </Card>
 

@@ -9,6 +9,11 @@ import {
   SettingOutlined,
   UserOutlined,
   LogoutOutlined,
+  IdcardOutlined,
+  SolutionOutlined,
+  SafetyCertificateOutlined,
+  UsergroupAddOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -27,14 +32,46 @@ const SIDER_COLLAPSED = 76
 // units alone, so a bare 100vh would stop short of the bottom of the screen.
 const FULL_HEIGHT = 'calc(100vh / var(--ui-scale))'
 
-const NAV = [
-  { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, label: 'Dashboard', module: 'DASHBOARD' },
-  { key: '/patients', title: 'Patients', icon: <TeamOutlined />, label: 'Patients', module: 'PATIENTS' },
-  { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, label: 'Doctors', module: 'DOCTORS' },
-  { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, label: 'Specialties', module: 'SPECIALTIES' },
-  { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, label: 'Appointments', module: 'APPOINTMENTS' },
-  { key: '/settings', title: 'Settings', icon: <SettingOutlined />, label: 'Settings', module: 'SETTINGS' },
+// The sidebar grouped by audience; each item is shown only if the user can view its module.
+const NAV_GROUPS = [
+  {
+    key: 'admin',
+    label: 'Administration',
+    items: [
+      { key: '/', title: 'Dashboard', icon: <DashboardOutlined />, module: 'DASHBOARD' },
+      { key: '/patients', title: 'Patients', icon: <TeamOutlined />, module: 'PATIENTS' },
+      { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, module: 'DOCTORS' },
+      { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, module: 'SPECIALTIES' },
+      { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, module: 'APPOINTMENTS' },
+      { key: '/reports', title: 'Reports', icon: <FileTextOutlined />, module: 'REPORTS' },
+      { key: '/roles', title: 'Roles', icon: <SafetyCertificateOutlined />, module: 'ROLES' },
+      { key: '/users', title: 'Users', icon: <UsergroupAddOutlined />, module: 'USERS' },
+      { key: '/settings', title: 'Settings', icon: <SettingOutlined />, module: 'SETTINGS' },
+    ],
+  },
+  {
+    key: 'doctor',
+    label: 'Doctor',
+    items: [
+      { key: '/doctor/schedule', title: 'My Schedule', icon: <CalendarOutlined />, module: 'DOCTOR_PORTAL' },
+      { key: '/doctor/patients', title: 'My Patients', icon: <TeamOutlined />, module: 'DOCTOR_PORTAL' },
+    ],
+  },
+  {
+    key: 'me',
+    label: 'My Health',
+    items: [
+      { key: '/me/book', title: 'Book Appointment', icon: <CalendarOutlined />, module: 'CUSTOMER_PORTAL' },
+      { key: '/me/appointments', title: 'My Appointments', icon: <SolutionOutlined />, module: 'CUSTOMER_PORTAL' },
+      { key: '/me/prescriptions', title: 'My Prescriptions', icon: <MedicineBoxOutlined />, module: 'CUSTOMER_PORTAL' },
+      { key: '/me/reports', title: 'My Reports', icon: <FileTextOutlined />, module: 'CUSTOMER_PORTAL' },
+      { key: '/me/profile', title: 'My Profile', icon: <IdcardOutlined />, module: 'CUSTOMER_PORTAL' },
+    ],
+  },
 ]
+
+// Flattened for selected-key matching and the header title.
+const ALL_NAV = NAV_GROUPS.flatMap((g) => g.items)
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
@@ -44,11 +81,13 @@ export default function AppLayout() {
   const user = useSelector(selectUser)
   const { canView } = usePermission()
 
-  const menuItems = NAV.filter((n) => canView(n.module)).map(({ key, icon, label }) => ({
-    key,
-    icon,
-    label: <Link to={key}>{label}</Link>,
-  }))
+  // Build grouped menu items, keeping only viewable entries and dropping any empty group.
+  const menuItems = NAV_GROUPS.map((group) => {
+    const children = group.items
+      .filter((n) => canView(n.module))
+      .map(({ key, icon, title }) => ({ key, icon, label: <Link to={key}>{title}</Link> }))
+    return children.length ? { key: group.key, type: 'group', label: group.label, children } : null
+  }).filter(Boolean)
 
   const handleLogout = () => {
     dispatch(loggedOut())
@@ -56,11 +95,11 @@ export default function AppLayout() {
   }
 
   const selectedKey =
-    NAV.map((i) => i.key)
+    ALL_NAV.map((i) => i.key)
       .filter((k) => k !== '/' && location.pathname.startsWith(k))
       .sort((a, b) => b.length - a.length)[0] || '/'
 
-  const currentTitle = NAV.find((n) => n.key === selectedKey)?.title || 'HealthConnect'
+  const currentTitle = ALL_NAV.find((n) => n.key === selectedKey)?.title || 'HealthConnect'
 
   return (
     <Layout style={{ minHeight: FULL_HEIGHT }}>

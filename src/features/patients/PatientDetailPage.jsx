@@ -17,6 +17,7 @@ import {
 } from 'antd'
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons'
 import { usePatientDetails, usePatientAppointments } from './patientDetailHooks.js'
+import { useUsers } from '../users/usersHooks.js'
 import PatientFormModal from './PatientFormModal.jsx'
 import ConsultationView from '../consultations/ConsultationView.jsx'
 import { enumLabel } from '../../constants/enums.js'
@@ -45,6 +46,7 @@ export default function PatientDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
 
   const { data, isLoading, isError, error } = usePatientDetails(patientId)
+  const { data: users } = useUsers()
   const visits = usePatientAppointments(patientId, page, size)
 
   if (isLoading) {
@@ -66,6 +68,7 @@ export default function PatientDetailPage() {
   }
 
   const patient = data?.patient ?? {}
+  const linkedUser = (users ?? []).find((u) => u.patientId === patientId)
   const stats = data?.stats ?? {}
   const fullName = [patient.firstName, patient.lastName].filter(Boolean).join(' ')
 
@@ -180,6 +183,7 @@ export default function PatientDetailPage() {
           </Descriptions.Item>
           <Descriptions.Item label="Phone">{patient.phone || dash}</Descriptions.Item>
           <Descriptions.Item label="Email">{patient.email || dash}</Descriptions.Item>
+          <Descriptions.Item label="Login">{linkedUser?.username || '— (no account)'}</Descriptions.Item>
           {/* "filled" rather than a number: the column count is responsive, and a fixed
               span overflows the narrower layouts. An address wants the whole line at
               every width anyway. */}
