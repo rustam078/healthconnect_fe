@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import {
   getMyAppointments,
+  getSchedule,
+  getWorkspace,
   getConsultation,
   saveConsultation,
   completeAppointment,
@@ -8,14 +10,80 @@ import {
   getPatientReports,
   getDepartmentPatients,
   getPatientProfile,
+  getLabTests,
+  orderTests,
+  getOrderedTests,
+  getFullHistory,
+  getHistoryDetail,
 } from './doctorPortalApi.js'
+
+// A patient's whole visit history across all doctors.
+export function useFullHistory(patientId) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'full-history', patientId],
+    queryFn: () => getFullHistory(patientId),
+    enabled: Boolean(patientId),
+  })
+}
+
+// One past visit's full record (consultation + tests + reports).
+export function useHistoryDetail(appointmentId) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'history-detail', appointmentId],
+    queryFn: () => getHistoryDetail(appointmentId),
+    enabled: Boolean(appointmentId),
+  })
+}
+
+// The lab-test catalogue the doctor searches when ordering.
+export function useLabTests() {
+  return useQuery({ queryKey: ['doctor-portal', 'lab-tests'], queryFn: getLabTests })
+}
+
+// Tests ordered on an appointment (with their status).
+export function useOrderedTests(appointmentId) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'ordered-tests', appointmentId],
+    queryFn: () => getOrderedTests(appointmentId),
+    enabled: Boolean(appointmentId),
+  })
+}
+
+export function useOrderTests() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ appointmentId, labTestIds }) => orderTests(appointmentId, labTestIds),
+    onSuccess: (_d, { appointmentId }) =>
+      qc.invalidateQueries({ queryKey: ['doctor-portal', 'ordered-tests', appointmentId] }),
+  })
+}
+
+// The doctor's day as rich schedule rows (patient details included), earliest slot first.
+export function useSchedule(date) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'schedule', date],
+    queryFn: () => getSchedule(date),
+  })
+}
+
+// Header details for the consultation workspace page.
+export function useWorkspace(appointmentId) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'workspace', appointmentId],
+    queryFn: () => getWorkspace(appointmentId),
+    enabled: Boolean(appointmentId),
+  })
+}
 
 // Mark one of the doctor's appointments as completed.
 export function useCompleteAppointment() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: completeAppointment,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['doctor-portal', 'appointments'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['doctor-portal', 'appointments'] })
+      qc.invalidateQueries({ queryKey: ['doctor-portal', 'schedule'] })
+    },
   })
 }
 

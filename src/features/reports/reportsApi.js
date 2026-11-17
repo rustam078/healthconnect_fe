@@ -10,3 +10,7 @@ export function uploadReport(formData) {
 export function getReports(patientId) {
   return axiosClient.get('/reports', { params: { patientId } })
 }
+
+export function getOrderedTests(appointmentId) {
+  return axiosClient.get(`/reports/appointments/${appointmentId}/tests`)
+}

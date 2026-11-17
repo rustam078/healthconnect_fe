@@ -6,6 +6,34 @@ export function getMyAppointments({ date, page = 0, size = 20 }) {
   })
 }
 
+export function getSchedule(date) {
+  return axiosClient.get('/doctor-portal/schedule', { params: { date: date || undefined } })
+}
+
+export function getWorkspace(appointmentId) {
+  return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/workspace`)
+}
+
+export function getLabTests() {
+  return axiosClient.get('/doctor-portal/lab-tests')
+}
+
+export function orderTests(appointmentId, labTestIds) {
+  return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/tests`, { labTestIds })
+}
+
+export function getOrderedTests(appointmentId) {
+  return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/tests`)
+}
+
+export function getFullHistory(patientId) {
+  return axiosClient.get(`/doctor-portal/patients/${patientId}/full-history`)
+}
+
+export function getHistoryDetail(appointmentId) {
+  return axiosClient.get(`/doctor-portal/history/${appointmentId}`)
+}
+
 export function getConsultation(appointmentId) {
   return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/consultation`)
 }

@@ -11,6 +11,7 @@ import SettingListPage from '../features/settings/SettingListPage.jsx'
 import RoleListPage from '../features/roles/RoleListPage.jsx'
 import UserListPage from '../features/users/UserListPage.jsx'
 import DoctorSchedulePage from '../features/portal/doctor/DoctorSchedulePage.jsx'
+import DoctorAppointmentPage from '../features/portal/doctor/DoctorAppointmentPage.jsx'
 import DoctorPatientsPage from '../features/portal/doctor/DoctorPatientsPage.jsx'
 import DoctorPatientDetailPage from '../features/portal/doctor/DoctorPatientDetailPage.jsx'
 import BookAppointmentPage from '../features/portal/customer/BookAppointmentPage.jsx'
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
       { path: 'users', element: gated('USERS', <UserListPage />) },
       { path: 'reports', element: gated('REPORTS', <ReportsPage />) },
       { path: 'doctor/schedule', element: gated('DOCTOR_PORTAL', <DoctorSchedulePage />) },
+      { path: 'doctor/appointments/:appointmentId', element: gated('DOCTOR_PORTAL', <DoctorAppointmentPage />) },
       { path: 'doctor/patients', element: gated('DOCTOR_PORTAL', <DoctorPatientsPage />) },
       { path: 'doctor/patients/:patientId', element: gated('DOCTOR_PORTAL', <DoctorPatientDetailPage />) },
       { path: 'me/book', element: gated('CUSTOMER_PORTAL', <BookAppointmentPage />) },

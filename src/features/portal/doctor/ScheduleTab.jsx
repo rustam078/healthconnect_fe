@@ -1,119 +1,67 @@
 import { useState } from 'react'
-import { DatePicker, Table, Button, Tag, Typography, Space, Popconfirm, App } from 'antd'
-import { EditOutlined, CheckOutlined, FileTextOutlined } from '@ant-design/icons'
+import { DatePicker, Table, Tag, Typography, Space, Tabs } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { useMyAppointments, useCompleteAppointment } from './doctorPortalHooks.js'
-import ConsultationModal from './ConsultationModal.jsx'
-import VisitReportsModal from './VisitReportsModal.jsx'
+import { useSchedule } from './doctorPortalHooks.js'
 import { enumLabel } from '../../../constants/enums.js'
 import { getErrorMessage } from '../../../utils/apiError.js'
 
 const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 
-// Today's (or a chosen day's) appointments, with a prescription editor per row.
-export default function ScheduleTab() {
-  const { message } = App.useApp()
-  const [date, setDate] = useState(dayjs())
-  const [page, setPage] = useState(1)
-  const [size, setSize] = useState(20)
-  const [selected, setSelected] = useState(null)
-  const [reportsFor, setReportsFor] = useState(null)
-  const complete = useCompleteAppointment()
+// 24h "HH:mm:ss" -> 12h "hh:mm AM".
+const fmtTime = (t) => (t ? dayjs(`2000-01-01T${t}`).format('hh:mm A') : '-')
 
-  const handleComplete = (id) => {
-    complete.mutate(id, {
-      onSuccess: () => message.success('Appointment marked completed'),
-      onError: (e) => message.error(getErrorMessage(e)),
-    })
-  }
+// The doctor's day: a Schedule tab (not yet completed) and a Completed tab. Rows are sorted
+// by slot ascending (server-side); clicking a row opens its consultation workspace.
+export default function ScheduleTab() {
+  const navigate = useNavigate()
+  const [date, setDate] = useState(dayjs())
 
   const dateStr = date ? date.format('YYYY-MM-DD') : undefined
-  const { data, isFetching, isError, error } = useMyAppointments({ date: dateStr, page, size })
-  const rows = data?.content ?? []
-  const total = data?.totalElements ?? 0
+  const { data, isFetching, isError, error } = useSchedule(dateStr)
+  const rows = data ?? []
+  const scheduled = rows.filter((r) => r.status !== 'COMPLETED')
+  const completed = rows.filter((r) => r.status === 'COMPLETED')
 
   const columns = [
+    { title: 'ID', dataIndex: 'appointmentId', key: 'appointmentId', width: 70 },
     { title: 'Patient', dataIndex: 'patientName', key: 'patientName' },
-    {
-      title: 'Time',
-      key: 'time',
-      render: (_, r) => `${r.startTime ?? '-'} – ${r.endTime ?? '-'}`,
-    },
+    { title: 'Time', key: 'time', render: (_, r) => `${fmtTime(r.startTime)} - ${fmtTime(r.endTime)}` },
+    { title: 'Age', dataIndex: 'age', key: 'age', width: 70 },
+    { title: 'Gender', dataIndex: 'gender', key: 'gender', render: (g) => enumLabel(g) || '—' },
+    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    { title: 'Blood', dataIndex: 'bloodGroup', key: 'bloodGroup', width: 80, render: (b) => enumLabel(b) || '—' },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: 110,
       render: (s) => (s ? <Tag color={STATUS_COLOR[s] || 'default'}>{enumLabel(s)}</Tag> : '—'),
     },
-    {
-      title: 'Action',
-      key: 'action',
-      width: 360,
-      fixed: 'right',
-      render: (_, r) => (
-        <Space size={4} wrap>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => setSelected(r)}>
-            Prescription
-          </Button>
-          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => setReportsFor(r)}>
-            Reports
-          </Button>
-          {r.status !== 'COMPLETED' && r.status !== 'CANCELLED' && (
-            <Popconfirm title="Mark this appointment completed?" onConfirm={() => handleComplete(r.id)}>
-              <Button type="link" size="small" icon={<CheckOutlined />}>
-                Mark completed
-              </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
-    },
+  ]
+
+  const renderTable = (dataSource) => (
+    <Table
+      rowKey="appointmentId"
+      loading={isFetching}
+      columns={columns}
+      dataSource={dataSource}
+      scroll={{ x: 820 }}
+      pagination={false}
+      onRow={(r) => ({ onClick: () => navigate(`/doctor/appointments/${r.appointmentId}`), style: { cursor: 'pointer' } })}
+    />
+  )
+
+  const tabs = [
+    { key: 'schedule', label: `Schedule (${scheduled.length})`, children: renderTable(scheduled) },
+    { key: 'completed', label: `Completed (${completed.length})`, children: renderTable(completed) },
   ]
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <DatePicker
-        value={date}
-        onChange={(d) => {
-          setDate(d)
-          setPage(1)
-        }}
-        format="DD MMM YYYY"
-        allowClear={false}
-      />
-
+      <DatePicker value={date} onChange={(d) => setDate(d)} format="DD MMM YYYY" allowClear={false} />
       {isError && <Typography.Text type="danger">{getErrorMessage(error)}</Typography.Text>}
-
-      <Table
-        rowKey="id"
-        loading={isFetching}
-        columns={columns}
-        dataSource={rows}
-        scroll={{ x: 720 }}
-        pagination={{
-          current: page,
-          pageSize: size,
-          total,
-          showSizeChanger: true,
-          onChange: (p, s) => {
-            setPage(p)
-            setSize(s)
-          },
-        }}
-      />
-
-      <ConsultationModal
-        appointment={selected}
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
-      />
-
-      <VisitReportsModal
-        patientId={reportsFor?.patientId}
-        appointmentId={reportsFor?.id}
-        open={Boolean(reportsFor)}
-        onClose={() => setReportsFor(null)}
-      />
+      <Tabs defaultActiveKey="schedule" items={tabs} />
     </Space>
   )
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Modal, Form, Input, Upload, Button, Select, App } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import { useUploadReport } from './reportsHooks.js'
+import { getOrderedTests } from './reportsApi.js'
 import { usePatientAppointments } from '../patients/patientDetailHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -12,6 +14,7 @@ export default function ReportUploadModal({ open, patientId, onClose }) {
   const [file, setFile] = useState(null)
   const uploadMutation = useUploadReport()
   const { data: visits } = usePatientAppointments(patientId, 1, 100)
+  const appointmentId = Form.useWatch('appointmentId', form)
 
   // Offer the patient's visits so a report can be tied to one (optional).
   const appointmentOptions = (visits?.content ?? []).map((a) => ({
@@ -19,16 +22,27 @@ export default function ReportUploadModal({ open, patientId, onClose }) {
     label: `${a.appointmentDate ?? '—'} · ${a.doctorName ?? ''} · ${a.status ?? ''}`.trim(),
   }))
 
+  // When a visit is chosen, offer its still-pending ordered tests to fulfil with this report.
+  const { data: ordered } = useQuery({
+    queryKey: ['reports', 'ordered-tests', appointmentId],
+    queryFn: () => getOrderedTests(appointmentId),
+    enabled: Boolean(appointmentId),
+  })
+  const orderedOptions = (ordered ?? [])
+    .filter((t) => t.status === 'ORDERED')
+    .map((t) => ({ value: t.id, label: `${t.testName} (${t.category})` }))
+
   const close = () => {
     form.resetFields()
     setFile(null)
     onClose()
   }
 
-  // Keep the file in state instead of auto-uploading; only accept PDFs.
+  // Keep the file in state instead of auto-uploading; accept a PDF or an image.
+  const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']
   const beforeUpload = (f) => {
-    if (f.type !== 'application/pdf') {
-      message.error('Only PDF files are allowed')
+    if (!ALLOWED.includes(f.type)) {
+      message.error('Only PDF or image files are allowed')
       return Upload.LIST_IGNORE
     }
     setFile(f)
@@ -41,6 +55,7 @@ export default function ReportUploadModal({ open, patientId, onClose }) {
     formData.append('patientId', patientId)
     formData.append('title', values.title)
     if (values.appointmentId != null) formData.append('appointmentId', values.appointmentId)
+    if (values.orderedTestId != null) formData.append('orderedTestId', values.orderedTestId)
     formData.append('file', file)
     uploadMutation.mutate(formData, {
       onSuccess: () => {
@@ -67,9 +82,14 @@ export default function ReportUploadModal({ open, patientId, onClose }) {
         <Form.Item name="appointmentId" label="Link to appointment (optional)">
           <Select allowClear placeholder="Not linked to a visit" options={appointmentOptions} />
         </Form.Item>
-        <Form.Item label="PDF file" required>
-          <Upload accept="application/pdf" maxCount={1} beforeUpload={beforeUpload} onRemove={() => setFile(null)}>
-            <Button icon={<UploadOutlined />}>Select PDF</Button>
+        {appointmentId && orderedOptions.length > 0 && (
+          <Form.Item name="orderedTestId" label="Fulfils ordered test (optional)">
+            <Select allowClear placeholder="Mark an ordered test as available" options={orderedOptions} />
+          </Form.Item>
+        )}
+        <Form.Item label="PDF or image file" required>
+          <Upload accept=".pdf,image/*" maxCount={1} beforeUpload={beforeUpload} onRemove={() => setFile(null)}>
+            <Button icon={<UploadOutlined />}>Select file</Button>
           </Upload>
         </Form.Item>
       </Form>
