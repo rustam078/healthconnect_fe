@@ -114,6 +114,7 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
         appointmentDate: values.appointmentDate.format('YYYY-MM-DD'),
         startTime: values.startTime.format('HH:mm'),
         durationMinutes: values.durationMinutes,
+        appointmentType:"NEW"
       },
       {
         onSuccess: () => {

@@ -15,7 +15,44 @@ import {
   getOrderedTests,
   getFullHistory,
   getHistoryDetail,
+  getAvailableSlots,
+  scheduleFollowUp,
+  getDoctorSpecialties,
+  referPatient,
 } from './doctorPortalApi.js'
+
+// The doctor's own free slots on a date, for scheduling a follow-up.
+export function useAvailableSlots(date) {
+  return useQuery({
+    queryKey: ['doctor-portal', 'slots', date],
+    queryFn: () => getAvailableSlots(date),
+    enabled: Boolean(date),
+  })
+}
+
+export function useScheduleFollowUp() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ appointmentId, payload }) => scheduleFollowUp(appointmentId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['doctor-portal', 'schedule'] })
+      qc.invalidateQueries({ queryKey: ['doctor-portal', 'workspace'] })
+    },
+  })
+}
+
+// Specialties the doctor can refer to.
+export function useDoctorSpecialties() {
+  return useQuery({ queryKey: ['doctor-portal', 'specialties'], queryFn: getDoctorSpecialties })
+}
+
+export function useRefer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ appointmentId, payload }) => referPatient(appointmentId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['doctor-portal', 'workspace'] }),
+  })
+}
 
 // A patient's whole visit history across all doctors.
 export function useFullHistory(patientId) {

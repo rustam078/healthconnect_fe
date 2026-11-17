@@ -42,6 +42,7 @@ const NAV_GROUPS = [
       { key: '/patients', title: 'Patients', icon: <TeamOutlined />, module: 'PATIENTS' },
       { key: '/doctors', title: 'Doctors', icon: <MedicineBoxOutlined />, module: 'DOCTORS' },
       { key: '/specialties', title: 'Specialties', icon: <ApartmentOutlined />, module: 'SPECIALTIES' },
+      { key: '/appointments', title: 'Appointments', icon: <CalendarOutlined />, module: 'APPOINTMENTS' },
       { key: '/reports', title: 'Reports', icon: <FileTextOutlined />, module: 'REPORTS' },
       { key: '/roles', title: 'Roles', icon: <SafetyCertificateOutlined />, module: 'ROLES' },
       { key: '/users', title: 'Users', icon: <UsergroupAddOutlined />, module: 'USERS' },

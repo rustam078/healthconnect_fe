@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Row, Col, Card, List, Button, Tag, Space, Tabs, Descriptions, Table, Empty, Spin } from 'antd'
+import { Card, Button, Tag, Tabs, Descriptions, Table, Typography, Empty, Spin } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useFullHistory, useHistoryDetail } from './doctorPortalHooks.js'
 import ReportsViewer from '../../../components/common/ReportsViewer.jsx'
@@ -11,9 +12,11 @@ const MED_COLUMNS = [
   { title: 'Duration', dataIndex: 'duration', key: 'duration' },
   { title: 'Remarks', dataIndex: 'instructions', key: 'instructions' },
 ]
+const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 const fmtTime = (t) => (t ? dayjs(`2000-01-01T${t}`).format('hh:mm A') : '')
+const hideScroll = { scrollbarWidth: 'none', msOverflowStyle: 'none' }
 
-// The patient's full history across all doctors (left), with a details panel (right).
+// Full-height split: compact one-row visit list on the left, details on the right.
 export default function PatientHistoryPanel({ patientId }) {
   const [selected, setSelected] = useState(null)
   const { data: items, isLoading } = useFullHistory(patientId)
@@ -55,32 +58,35 @@ export default function PatientHistoryPanel({ patientId }) {
   ] : []
 
   return (
-    <Row gutter={16} align="top">
-      <Col xs={24} md={10}>
-        <List
-          itemLayout="vertical"
-          dataSource={items}
-          renderItem={(it) => (
-            <List.Item
-              key={it.appointmentId}
-              style={{ border: '1px solid #eee', borderRadius: 8, padding: 12, marginBottom: 10 }}
-              extra={<Button size="small" onClick={() => setSelected(it.appointmentId)}>View Details</Button>}
-            >
-              <div style={{ fontWeight: 600 }}>
+    <div style={{ display: 'flex', gap: 16, height: '100%' }}>
+      <div style={{ width: 320, flex: '0 0 320px', overflowY: 'auto', ...hideScroll }}>
+        {items.map((it) => (
+          <div
+            key={it.appointmentId}
+            onClick={() => setSelected(it.appointmentId)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+              borderBottom: '1px solid #f0f0f0', cursor: 'pointer', borderRadius: 6,
+              background: selected === it.appointmentId ? '#e6f4f1' : undefined,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
                 {dayjs(it.appointmentDate).format('DD MMM YYYY')} · Dr. {it.doctorName}
               </div>
-              <div style={{ color: '#7C8B87', margin: '2px 0 6px' }}>{it.diagnosis || '—'}</div>
-              <Space size={6} wrap>
-                <Tag color={it.status === 'COMPLETED' ? 'blue' : 'green'}>{it.status}</Tag>
-                {it.hasPrescription && <Tag>Prescription</Tag>}
-                {it.testCount > 0 && <Tag>Lab Tests ({it.testCount})</Tag>}
-              </Space>
-            </List.Item>
-          )}
-        />
-      </Col>
-      <Col xs={24} md={14}>
-        <Card size="small" title="History Details">
+              <Typography.Text type="secondary" ellipsis style={{ fontSize: 12 }}>
+                {it.diagnosis || '—'}
+              </Typography.Text>
+            </div>
+            <Tag color={STATUS_COLOR[it.status] || 'default'} style={{ margin: 0 }}>{it.status}</Tag>
+            <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => setSelected(it.appointmentId)} />
+          </div>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
+        <Card size="small" title="History Details" style={{ height: '100%' }}
+          styles={{ body: { height: 'calc(100% - 40px)', overflowY: 'auto', ...hideScroll } }}>
           {!selected ? (
             <Empty description="Select a visit to see details" />
           ) : isFetching ? (
@@ -89,7 +95,7 @@ export default function PatientHistoryPanel({ patientId }) {
             <Tabs defaultActiveKey="consultation" items={detailTabs} />
           )}
         </Card>
-      </Col>
-    </Row>
+      </div>
+    </div>
   )
 }

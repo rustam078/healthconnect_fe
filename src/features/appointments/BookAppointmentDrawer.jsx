@@ -121,6 +121,7 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
       appointmentDate: values.appointmentDate.format('YYYY-MM-DD'),
       startTime: values.startTime.format('HH:mm'),
       durationMinutes: values.durationMinutes,
+      appointmentType:"NEW"
     }
     createMutation.mutate(payload, {
       onSuccess: () => {

@@ -26,6 +26,22 @@ export function getOrderedTests(appointmentId) {
   return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/tests`)
 }
 
+export function getAvailableSlots(date) {
+  return axiosClient.get('/doctor-portal/available-slots', { params: { date } })
+}
+
+export function scheduleFollowUp(appointmentId, payload) {
+  return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/follow-up`, payload)
+}
+
+export function getDoctorSpecialties() {
+  return axiosClient.get('/doctor-portal/specialties')
+}
+
+export function referPatient(appointmentId, payload) {
+  return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/referral`, payload)
+}
+
 export function getFullHistory(patientId) {
   return axiosClient.get(`/doctor-portal/patients/${patientId}/full-history`)
 }

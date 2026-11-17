@@ -19,12 +19,13 @@ export function updateAppointmentStatus(id, status) {
 
 // Move an existing appointment to a different doctor and/or time. The backend locks the
 // doctor while it re-checks the slot, so a clash loses rather than double-booking.
-export function rescheduleAppointment(id, { doctorId, appointmentDate, startTime, durationMinutes }) {
+export function rescheduleAppointment(id, { doctorId, appointmentDate, startTime, durationMinutes, appointmentType }) {
   return axiosClient.put(`/appointments/${id}`, {
     doctorId,
     appointmentDate,
     startTime,
     durationMinutes,
+    appointmentType,
   })
 }
 
