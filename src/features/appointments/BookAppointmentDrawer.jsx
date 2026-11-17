@@ -1,4 +1,4 @@
-import { Drawer, Form, Select, DatePicker, Button, Space, Alert, Spin, Typography, Tooltip, theme, App } from 'antd'
+import { Drawer, Form, Select, DatePicker, Button, Space, Alert, Spin, Typography, Tooltip, Input, theme, App } from 'antd'
 import { CheckOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -121,7 +121,8 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
       appointmentDate: values.appointmentDate.format('YYYY-MM-DD'),
       startTime: values.startTime.format('HH:mm'),
       durationMinutes: values.durationMinutes,
-      appointmentType:"NEW"
+      appointmentType:"NEW",
+      reason: values.reason,
     }
     createMutation.mutate(payload, {
       onSuccess: () => {
@@ -196,6 +197,14 @@ export default function BookAppointmentDrawer({ open, initial, onClose }) {
             fetchPage={getPatients}
             toOption={toPatientOption}
           />
+        </Form.Item>
+
+        <Form.Item
+          name="reason"
+          label="Reason for appointment"
+          rules={[{ required: true, whitespace: true, message: 'Reason is required' }]}
+        >
+          <Input.TextArea rows={3} maxLength={500} showCount placeholder="Reason / symptoms (on behalf of the patient)" />
         </Form.Item>
 
         <Form.Item

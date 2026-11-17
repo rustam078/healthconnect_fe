@@ -1,34 +1,36 @@
 import { useState } from 'react'
-import { Table, Tag, Space, Button, Popconfirm, Alert, App } from 'antd'
+import { Table, Tag, Space, Button, Popconfirm, Alert, Drawer, App } from 'antd'
+import { FilePdfOutlined, FileTextOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { useMyAppointments, useCancelAppointment } from './customerPortalHooks.js'
+import { useMyAppointments, useCancelAppointment, useMyReports } from './customerPortalHooks.js'
+import PdfViewer from '../../../components/common/PdfViewer.jsx'
+import ReportsViewer from '../../../components/common/ReportsViewer.jsx'
 import { getErrorMessage } from '../../../utils/apiError.js'
-import PrescriptionModal from './PrescriptionModal.jsx'
 
-const STATUS_COLORS = {
-  BOOKED: 'blue',
-  COMPLETED: 'green',
-  CANCELLED: 'red',
-  NO_SHOW: 'orange',
-}
+const STATUS_COLORS = { BOOKED: 'blue', SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red', NO_SHOW: 'orange' }
 
-// An appointment can be cancelled only if it is upcoming and not already cancelled.
+// An appointment can be cancelled only if it is upcoming and not already cancelled/completed.
 function isCancellable(record) {
   if (record.status === 'CANCELLED' || record.status === 'COMPLETED') return false
   return dayjs(`${record.appointmentDate} ${record.startTime}`).isAfter(dayjs())
 }
 
-export default function MyAppointmentsTab() {
+export default function MyAppointmentsTab({ search = '' }) {
   const { message } = App.useApp()
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(20)
-  const [prescriptionId, setPrescriptionId] = useState(null)
+  const [pdfFor, setPdfFor] = useState(null)
+  const [reportsFor, setReportsFor] = useState(null)
 
   const { data, isFetching, isError, error } = useMyAppointments({ page, size })
+  const { data: allReports } = useMyReports()
   const cancel = useCancelAppointment()
 
-  const rows = data?.content ?? []
+  const q = search.trim().toLowerCase()
+  const rows = (data?.content ?? []).filter((r) =>
+    !q || String(r.id).includes(q) || (r.doctorName ?? '').toLowerCase().includes(q))
   const total = data?.totalElements ?? 0
+  const visitReports = (allReports ?? []).filter((r) => r.appointmentId === reportsFor)
 
   const handleCancel = (id) => {
     cancel.mutate(id, {
@@ -38,34 +40,20 @@ export default function MyAppointmentsTab() {
   }
 
   const columns = [
+    { title: 'AppointmentId', dataIndex: 'id', key: 'id', width: 130 },
     { title: 'Doctor', dataIndex: 'doctorName', key: 'doctorName' },
     { title: 'Date', dataIndex: 'appointmentDate', key: 'appointmentDate' },
+    { title: 'Time', key: 'time', render: (_, r) => `${r.startTime ?? '-'} - ${r.endTime ?? '-'}` },
+    { title: 'Status', dataIndex: 'status', key: 'status', render: (s) => <Tag color={STATUS_COLORS[s] || 'default'}>{s}</Tag> },
     {
-      title: 'Time',
-      key: 'time',
-      render: (_, r) => `${r.startTime} - ${r.endTime}`,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => <Tag color={STATUS_COLORS[status] || 'default'}>{status}</Tag>,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 240,
-      fixed: 'right',
-      render: (_, record) => (
+      title: 'Action', key: 'action', width: 350,
+      render: (_, r) => (
         <Space size={4} wrap>
-          <Button size="small" onClick={() => setPrescriptionId(record.id)}>
-            View record
-          </Button>
-          {isCancellable(record) && (
-            <Popconfirm title="Cancel this appointment?" onConfirm={() => handleCancel(record.id)}>
-              <Button size="small" danger>
-                Cancel
-              </Button>
+          <Button type="link" size="small" icon={<FilePdfOutlined />} onClick={() => setPdfFor(r.id)}>Prescription</Button>
+          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => setReportsFor(r.id)}>Reports</Button>
+          {isCancellable(r) && (
+            <Popconfirm title="Cancel this appointment?" onConfirm={() => handleCancel(r.id)}>
+              <Button type="link" size="small" danger>Cancel</Button>
             </Popconfirm>
           )}
         </Space>
@@ -83,21 +71,24 @@ export default function MyAppointmentsTab() {
         dataSource={rows}
         scroll={{ x: 760 }}
         pagination={{
-          current: page,
-          pageSize: size,
-          total,
-          showSizeChanger: true,
-          onChange: (p, s) => {
-            setPage(p)
-            setSize(s)
-          },
+          current: page, pageSize: size, total, showSizeChanger: true,
+          onChange: (p, s) => { setPage(p); setSize(s) },
         }}
       />
-      <PrescriptionModal
-        appointmentId={prescriptionId}
-        open={prescriptionId != null}
-        onClose={() => setPrescriptionId(null)}
-      />
+
+      <Drawer title="Prescription" placement="right" width={680} open={pdfFor != null}
+        onClose={() => setPdfFor(null)} destroyOnHidden>
+        {pdfFor && (
+          <PdfViewer url={`/customer-portal/appointments/${pdfFor}/consultation/pdf`}
+            height="calc(100vh - 140px)" emptyText="No prescription recorded for this visit." />
+        )}
+      </Drawer>
+
+      <Drawer title="Visit reports" placement="right" width={720} open={reportsFor != null}
+        onClose={() => setReportsFor(null)} destroyOnHidden>
+        <ReportsViewer reports={visitReports}
+          fileUrl={(rid) => `/customer-portal/reports/${rid}/file`} height="calc(100vh - 200px)" />
+      </Drawer>
     </>
   )
 }

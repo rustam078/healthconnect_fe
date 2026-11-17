@@ -78,7 +78,7 @@ export default function DoctorAppointmentPage() {
   }, [consult, form])
 
   const payloadFrom = (values) => ({
-    chiefComplaint: values.chiefComplaint,
+    chiefComplaint: ws?.reason?.trim() ? ws.reason : (consult?.chiefComplaint || 'Not provided'),
     severity: values.severity ?? null,
     diagnosis: values.diagnosis ?? null,
     notes: values.notes ?? null,
@@ -200,10 +200,12 @@ export default function DoctorAppointmentPage() {
 
   const consultationTab = (
     <Form form={form} layout="vertical" disabled={readOnly}>
-      <Form.Item name="chiefComplaint" label="Chief Complaint"
-        rules={[{ required: true, whitespace: true, message: 'Chief complaint is required' }]}>
-        <Input.TextArea rows={3} maxLength={1000} showCount placeholder="Enter chief complaint (e.g. Fever, Cough, Body Pain...)" />
-      </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Typography.Text strong>Chief Complaint</Typography.Text>
+        <div style={{ marginTop: 4, padding: '8px 12px', background: '#f5f8fa', borderRadius: 6, color: '#33413E' }}>
+          {ws?.reason || 'Not provided by patient'}
+        </div>
+      </div>
       <Row gutter={16}>
         <Col xs={24} md={14}>
           <Form.Item name="diagnosis" label="Diagnosis">

@@ -84,10 +84,6 @@ export default function ReportsPage() {
 
   return (
     <Card>
-      {/* <style>{`
-        .innerLabTable .ant-table-thead > tr > th { background: #e6f4f1 !important; color: #09acc9;border-radius: 0 !important; }
-        .ant-table-expanded-row > .ant-table-cell { background: #fafafa; }
-      `}</style> */}
 
       <style>{`
   /* Expanded row cell spacing */
