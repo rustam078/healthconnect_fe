@@ -14,3 +14,23 @@ export function getReports(patientId) {
 export function getOrderedTests(appointmentId) {
   return axiosClient.get(`/reports/appointments/${appointmentId}/tests`)
 }
+
+export function getLabOrders({ appointmentId, page = 0, size = 10 }) {
+  return axiosClient.get('/reports/lab-orders', {
+    params: { appointmentId: appointmentId ?? undefined, page, size },
+  })
+}
+
+export function uploadReportForTest(orderedTestId, formData) {
+  return axiosClient.post(`/reports/ordered-tests/${orderedTestId}/report`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export function removeReportFromTest(orderedTestId) {
+  return axiosClient.delete(`/reports/ordered-tests/${orderedTestId}/report`)
+}
+
+export function deleteOrderedTest(orderedTestId) {
+  return axiosClient.delete(`/reports/ordered-tests/${orderedTestId}`)
+}

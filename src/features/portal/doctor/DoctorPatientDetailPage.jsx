@@ -1,4 +1,5 @@
-import { Card, Descriptions, Tabs, Typography, Button, Space, Spin, Alert, Statistic, Row, Col } from 'antd'
+import { useState } from 'react'
+import { Card, Descriptions, Tabs, Typography, Button, Space, Spin, Alert, Statistic, Row, Col, Input } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { Link, useParams } from 'react-router-dom'
 import { usePatientProfile } from './doctorPortalHooks.js'
@@ -11,6 +12,7 @@ import { getErrorMessage } from '../../../utils/apiError.js'
 export default function DoctorPatientDetailPage() {
   const { patientId } = useParams()
   const id = Number(patientId)
+  const [search, setSearch] = useState('')
   const { data, isLoading, isError, error } = usePatientProfile(id)
 
   if (isLoading) return <Spin />
@@ -42,16 +44,24 @@ export default function DoctorPatientDetailPage() {
 
   const items = [
     { key: 'overview', label: 'Overview', children: overview },
-    { key: 'history', label: 'Visits & Prescriptions', children: <PatientHistoryTab patientId={id} /> },
-    { key: 'reports', label: 'Reports', children: <PatientReportsTab patientId={id} /> },
+    { key: 'history', label: 'Visits & Prescriptions', children: <PatientHistoryTab patientId={id} search={search} /> },
+    { key: 'reports', label: 'Reports', children: <PatientReportsTab patientId={id} search={search} /> },
   ]
 
   return (
     <Card>
-      <Space style={{ marginBottom: 12 }}>
-        <Link to="/doctor/patients"><Button icon={<ArrowLeftOutlined />}>Back</Button></Link>
-        <Typography.Title level={4} style={{ margin: 0 }}>{fullName || 'Patient'}</Typography.Title>
-      </Space>
+      <Row align="middle" justify="space-between" gutter={[8, 8]} wrap style={{ marginBottom: 12 }}>
+        <Col>
+          <Space>
+            <Link to="/doctor/patients"><Button icon={<ArrowLeftOutlined />}>Back</Button></Link>
+            <Typography.Title level={4} style={{ margin: 0 }}>{fullName || 'Patient'}</Typography.Title>
+          </Space>
+        </Col>
+        <Col>
+          <Input.Search placeholder="Search by Appointment ID" allowClear value={search}
+            onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
+        </Col>
+      </Row>
       <Tabs defaultActiveKey="overview" items={items} destroyOnHidden />
     </Card>
   )
