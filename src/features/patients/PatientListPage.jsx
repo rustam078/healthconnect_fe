@@ -6,6 +6,7 @@ import { getPatientColumns } from './patientColumns.jsx'
 import PatientFormModal from './PatientFormModal.jsx'
 import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS } from '../../constants/enums.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import Can from '../auth/Can.jsx'
 
 export default function PatientListPage() {
   const { message } = App.useApp()
@@ -82,13 +83,15 @@ export default function PatientListPage() {
               setPage(1)
             }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModal({ open: true, mode: 'create', record: null })}
-          >
-            Add Patient
-          </Button>
+          <Can module="PATIENTS" action="CREATE">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModal({ open: true, mode: 'create', record: null })}
+            >
+              Add Patient
+            </Button>
+          </Can>
         </Space>
       </Space>
 

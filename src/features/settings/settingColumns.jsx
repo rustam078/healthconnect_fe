@@ -1,5 +1,6 @@
 import { Button, Popconfirm, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import { EditOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons'
+import Can from '../auth/Can.jsx'
 
 // Long values (a base-url, a prompt) would push the actions column off the screen, so the
 // cell shows the start of one and the whole thing sits in a tooltip.
@@ -84,18 +85,22 @@ export function getSettingColumns({ onEdit, onDelete, onToggle, togglingId }) {
       width: 140,
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete this setting?"
-            description="Whatever reads it falls back to its default."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => onDelete(record)}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          <Can module="SETTINGS" action="UPDATE">
+            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
+              Edit
+            </Button>
+          </Can>
+          <Can module="SETTINGS" action="DELETE">
+            <Popconfirm
+              title="Delete this setting?"
+              description="Whatever reads it falls back to its default."
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => onDelete(record)}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },

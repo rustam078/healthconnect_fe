@@ -19,6 +19,7 @@ import DoctorFormModal from './DoctorFormModal.jsx'
 import { useSpecialties } from '../specialties/specialtiesHooks.js'
 import { GENDER_OPTIONS } from '../../constants/enums.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import Can from '../auth/Can.jsx'
 
 const EMPTY_FILTERS = {
   gender: undefined,
@@ -192,13 +193,15 @@ export default function DoctorListPage() {
               <Button icon={<FilterOutlined />}>Filters</Button>
             </Badge>
           </Popover>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModal({ open: true, mode: 'create', record: null })}
-          >
-            Add Doctor
-          </Button>
+          <Can module="DOCTORS" action="CREATE">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModal({ open: true, mode: 'create', record: null })}
+            >
+              Add Doctor
+            </Button>
+          </Can>
         </Space>
       </Space>
 

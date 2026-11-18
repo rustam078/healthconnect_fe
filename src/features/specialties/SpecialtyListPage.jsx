@@ -5,6 +5,7 @@ import { useSpecialties, useDeleteSpecialty } from './specialtiesHooks.js'
 import { getSpecialtyColumns } from './specialtyColumns.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 import SpecialtyFormModal from './SpecialtyFormModal.jsx'
+import Can from '../auth/Can.jsx'
 
 export default function SpecialtyListPage() {
   const { message } = App.useApp()
@@ -49,13 +50,15 @@ export default function SpecialtyListPage() {
               setPage(1)
             }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModal({ open: true, mode: 'create', record: null })}
-          >
-            Add Specialty
-          </Button>
+          <Can module="SPECIALTIES" action="CREATE">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModal({ open: true, mode: 'create', record: null })}
+            >
+              Add Specialty
+            </Button>
+          </Can>
         </Space>
       </Space>
 

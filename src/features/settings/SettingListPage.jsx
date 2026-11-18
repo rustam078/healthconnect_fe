@@ -5,6 +5,7 @@ import { useSettings, useDeleteSetting, useUpdateSetting } from './settingsHooks
 import { getSettingColumns } from './settingColumns.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 import SettingFormModal from './SettingFormModal.jsx'
+import Can from '../auth/Can.jsx'
 
 export default function SettingListPage() {
   const { message } = App.useApp()
@@ -89,13 +90,15 @@ export default function SettingListPage() {
               if (!e.target.value) setSearch('')
             }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModal({ open: true, mode: 'create', record: null })}
-          >
-            Add Setting
-          </Button>
+          <Can module="SETTINGS" action="CREATE">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModal({ open: true, mode: 'create', record: null })}
+            >
+              Add Setting
+            </Button>
+          </Can>
         </Space>
       </Space>
 

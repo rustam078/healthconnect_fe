@@ -12,6 +12,7 @@ import BookAppointmentDrawer from './BookAppointmentDrawer.jsx'
 import AppointmentDetailsDrawer from './AppointmentDetailsDrawer.jsx'
 import { getErrorMessage } from '../../utils/apiError.js'
 import { BRAND } from '../../app/theme.js'
+import Can from '../auth/Can.jsx'
 
 const isSunday = (d) => d.day() === 0
 
@@ -165,9 +166,11 @@ export default function AppointmentsPage() {
               format="DD MMM YYYY"
               disabledDate={(d) => d && (d < dayjs().startOf('day') || isSunday(d))}
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openBook({ appointmentDate: date })}>
-              Add appointment
-            </Button>
+            <Can module="APPOINTMENTS" action="CREATE">
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => openBook({ appointmentDate: date })}>
+                Add appointment
+              </Button>
+            </Can>
           </Space>
         </Space>
 

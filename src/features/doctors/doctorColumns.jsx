@@ -3,6 +3,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { enumLabel } from '../../constants/enums.js'
 import { formatCurrency } from '../../utils/format.js'
+import Can from '../auth/Can.jsx'
 
 const GENDER_COLOR = { MALE: 'blue', FEMALE: 'magenta', OTHER: 'default' }
 const dash = <span style={{ color: '#9AA7A3' }}>—</span>
@@ -71,17 +72,21 @@ export function getDoctorColumns({ onEdit, onDelete }) {
       width: 150,
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete this doctor?"
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => onDelete(record)}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          <Can module="DOCTORS" action="UPDATE">
+            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
+              Edit
+            </Button>
+          </Can>
+          <Can module="DOCTORS" action="DELETE">
+            <Popconfirm
+              title="Delete this doctor?"
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => onDelete(record)}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },
