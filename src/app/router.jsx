@@ -20,6 +20,7 @@ import MyPrescriptionsPage from '../features/portal/customer/MyPrescriptionsPage
 import MyReportsPage from '../features/portal/customer/MyReportsPage.jsx'
 import MyProfilePage from '../features/portal/customer/MyProfilePage.jsx'
 import ReportsPage from '../features/reports/ReportsPage.jsx'
+import CommunityPage from '../features/community/CommunityPage.jsx'
 import NotFoundPage from '../components/common/NotFoundPage.jsx'
 import LoginPage from '../features/auth/LoginPage.jsx'
 import RequireAuth from './RequireAuth.jsx'
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
       { path: 'roles', element: gated('ROLES', <RoleListPage />) },
       { path: 'users', element: gated('USERS', <UserListPage />) },
       { path: 'reports', element: gated('REPORTS', <ReportsPage />) },
+      { path: 'community', element: gated('COMMUNITIES', <CommunityPage />) },
       { path: 'doctor/schedule', element: gated('DOCTOR_PORTAL', <DoctorSchedulePage />) },
       { path: 'doctor/appointments/:appointmentId', element: gated('DOCTOR_PORTAL', <DoctorAppointmentPage />) },
       { path: 'doctor/patients', element: gated('DOCTOR_PORTAL', <DoctorPatientsPage />) },

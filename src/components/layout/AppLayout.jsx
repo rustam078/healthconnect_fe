@@ -14,6 +14,7 @@ import {
   SafetyCertificateOutlined,
   UsergroupAddOutlined,
   FileTextOutlined,
+  MessageOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -66,6 +67,13 @@ const NAV_GROUPS = [
       { key: '/me/prescriptions', title: 'My Prescriptions', icon: <MedicineBoxOutlined />, module: 'CUSTOMER_PORTAL' },
       { key: '/me/reports', title: 'My Reports', icon: <FileTextOutlined />, module: 'CUSTOMER_PORTAL' },
       { key: '/me/profile', title: 'My Profile', icon: <IdcardOutlined />, module: 'CUSTOMER_PORTAL' },
+    ],
+  },
+  {
+    key: 'community',
+    label: 'Community',
+    items: [
+      { key: '/community', title: 'Community Chat', icon: <MessageOutlined />, module: 'COMMUNITIES' },
     ],
   },
 ]
