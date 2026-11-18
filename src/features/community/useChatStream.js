@@ -11,6 +11,7 @@ export function useChatStream(handlers) {
     if (!token) return undefined
     const controller = new AbortController()
     let closed = false
+    let retryDelay = 3000
 
     const dispatch = (frame) => {
       let event = 'message'
@@ -37,6 +38,7 @@ export function useChatStream(handlers) {
           signal: controller.signal,
         })
         if (!res.ok || !res.body) throw new Error(`stream ${res.status}`)
+        retryDelay = 3000 // connected cleanly, reset backoff
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -54,7 +56,10 @@ export function useChatStream(handlers) {
       } catch {
         // falls through to reconnect below
       }
-      if (!closed) setTimeout(connect, 3000)
+      if (!closed) {
+        setTimeout(connect, retryDelay)
+        retryDelay = Math.min(retryDelay * 2, 30000) // back off so an outage never hammers the server
+      }
     }
 
     connect()
