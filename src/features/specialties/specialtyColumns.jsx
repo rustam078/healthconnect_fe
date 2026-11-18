@@ -1,6 +1,4 @@
-import { Button, Popconfirm, Space } from 'antd'
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import Can from '../auth/Can.jsx'
+import RowActions from '../../components/common/RowActions.jsx'
 
 export function getSpecialtyColumns({ onEdit, onDelete }) {
   return [
@@ -16,23 +14,13 @@ export function getSpecialtyColumns({ onEdit, onDelete }) {
       key: 'actions',
       width: 160,
       render: (_, record) => (
-        <Space>
-          <Can module="SPECIALTIES" action="UPDATE">
-            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-              Edit
-            </Button>
-          </Can>
-          <Can module="SPECIALTIES" action="DELETE">
-            <Popconfirm
-              title="Delete this specialty?"
-              okText="Delete"
-              okButtonProps={{ danger: true }}
-              onConfirm={() => onDelete(record)}
-            >
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Can>
-        </Space>
+        <RowActions
+          module="SPECIALTIES"
+          record={record}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          deleteTitle="Delete this specialty?"
+        />
       ),
     },
   ]

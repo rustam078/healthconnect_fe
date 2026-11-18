@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Card, Table, Button, Space, Tag, Typography, Popconfirm, App } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, Tag, Typography, App } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
 import { useRoles, useDeleteRole } from './rolesHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 import Can from '../auth/Can.jsx'
+import RowActions from '../../components/common/RowActions.jsx'
 import RoleFormModal from './RoleFormModal.jsx'
 
 export default function RoleListPage() {
@@ -24,12 +25,6 @@ export default function RoleListPage() {
   const columns = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (v) => v || <span style={{ color: '#999' }}>—</span>,
-    },
-    {
       title: 'Type',
       key: 'system',
       width: 120,
@@ -41,29 +36,14 @@ export default function RoleListPage() {
       key: 'actions',
       width: 160,
       render: (_, record) => (
-        <Space>
-          <Can module="ROLES" action="UPDATE">
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => setModal({ open: true, mode: 'edit', record })}
-            >
-              Edit
-            </Button>
-          </Can>
-          {!record.system && (
-            <Can module="ROLES" action="DELETE">
-              <Popconfirm
-                title="Delete this role?"
-                okText="Delete"
-                okButtonProps={{ danger: true }}
-                onConfirm={() => handleDelete(record)}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </Can>
-          )}
-        </Space>
+        <RowActions
+          module="ROLES"
+          record={record}
+          onEdit={(r) => setModal({ open: true, mode: 'edit', record: r })}
+          onDelete={handleDelete}
+          deleteTitle="Delete this role?"
+          allowDelete={!record.system}
+        />
       ),
     },
   ]

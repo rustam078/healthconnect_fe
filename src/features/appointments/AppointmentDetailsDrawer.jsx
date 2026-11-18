@@ -35,6 +35,7 @@ import TimeOfDayField from './TimeOfDayField.jsx'
 import { fmt12 } from './slots.js'
 import { formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import { usePermission } from '../auth/permissions.js'
 
 const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 
@@ -42,6 +43,9 @@ const DURATION_OPTIONS = [15, 30, 45, 60].map((v) => ({ label: `${v} minutes`, v
 
 export default function AppointmentDetailsDrawer({ open, appointment, doctor, onClose }) {
   const { message, modal } = App.useApp()
+  const { can } = usePermission()
+  const canUpdate = can('APPOINTMENTS', 'UPDATE')
+  const canCancel = can('APPOINTMENTS', 'DELETE')
   const [form] = Form.useForm()
   const [rescheduling, setRescheduling] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -163,21 +167,21 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
   // Update and cancel are the secondary actions - they live behind the header's overflow
   // menu so the footer is left for the two primary ones (record / complete).
   const moreItems = [
-    {
+    canUpdate && {
       key: 'update',
       icon: <EditOutlined />,
       label: 'Update appointment',
       disabled: rescheduling,
       onClick: startReschedule,
     },
-    {
+    canCancel && {
       key: 'cancel',
       icon: <CloseCircleOutlined />,
       label: 'Cancel appointment',
       danger: true,
       onClick: confirmCancel,
     },
-  ]
+  ].filter(Boolean)
 
   return (
     <Drawer
@@ -187,7 +191,7 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
       onClose={onClose}
       destroyOnHidden
       extra={
-        isLive && (
+        isLive && moreItems.length > 0 && (
           <Dropdown menu={{ items: moreItems }} trigger={['click']} placement="bottomRight">
             <Button icon={<MoreOutlined />} loading={cancel.isPending}>
               More
@@ -196,7 +200,7 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
         )
       }
       footer={
-        isLive && (
+        isLive && canUpdate && (
           <Space style={{ width: '100%', justifyContent: 'flex-end' }} wrap>
             {!hasConsultation && !consultationLoading && (
               <Button

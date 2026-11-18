@@ -23,6 +23,7 @@ import ConsultationView from '../consultations/ConsultationView.jsx'
 import { enumLabel } from '../../constants/enums.js'
 import { formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import Can from '../auth/Can.jsx'
 
 // The same colours the appointment drawer uses, so a status means the same thing
 // wherever it is read.
@@ -155,9 +156,11 @@ export default function PatientDetailPage() {
       <Card
         title="Profile"
         extra={
-          <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
-            Edit
-          </Button>
+          <Can module="PATIENTS" action="UPDATE">
+            <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
+          </Can>
         }
       >
         <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} size="small" colon={false}>

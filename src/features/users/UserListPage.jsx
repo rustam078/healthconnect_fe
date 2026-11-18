@@ -1,24 +1,46 @@
 import { useState } from 'react'
-import { Card, Table, Button, Space, Tag, Typography, Popconfirm, App } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useUsers, useDeleteUser } from './usersHooks.js'
+import { Card, Table, Button, Space, Tag, Typography, Switch, App } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { useUsers, useDeleteUser, useUpdateUser } from './usersHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import { usePermission } from '../auth/permissions.js'
 import Can from '../auth/Can.jsx'
+import RowActions from '../../components/common/RowActions.jsx'
 import UserFormModal from './UserFormModal.jsx'
 
 export default function UserListPage() {
   const { message } = App.useApp()
+  const { can } = usePermission()
   const [modal, setModal] = useState({ open: false, mode: 'create', record: null })
 
   const { data, isFetching, isError, error } = useUsers()
   const deleteMutation = useDeleteUser()
+  const updateMutation = useUpdateUser()
   const rows = data ?? []
+  const canToggle = can('USERS', 'UPDATE')
 
   const handleDelete = (record) => {
     deleteMutation.mutate(record.id, {
       onSuccess: () => message.success('User deleted'),
       onError: (e) => message.error(getErrorMessage(e)),
     })
+  }
+
+  // Activate or deactivate a user in place, keeping its role and links unchanged.
+  const toggleEnabled = (record) => {
+    const payload = {
+      roleId: record.roleId,
+      enabled: !record.enabled,
+      doctorId: record.doctorId ?? null,
+      patientId: record.patientId ?? null,
+    }
+    updateMutation.mutate(
+      { id: record.id, payload },
+      {
+        onSuccess: () => message.success(record.enabled ? 'User deactivated' : 'User activated'),
+        onError: (e) => message.error(getErrorMessage(e)),
+      },
+    )
   }
 
   const columns = [
@@ -28,35 +50,34 @@ export default function UserListPage() {
       title: 'Status',
       dataIndex: 'enabled',
       key: 'enabled',
-      width: 120,
-      render: (v) => (v ? <Tag color="green">Enabled</Tag> : <Tag color="red">Disabled</Tag>),
+      width: 140,
+      render: (v, record) =>
+        canToggle ? (
+          <Switch
+            checked={v}
+            checkedChildren="Active"
+            unCheckedChildren="Inactive"
+            loading={updateMutation.isPending && updateMutation.variables?.id === record.id}
+            onChange={() => toggleEnabled(record)}
+          />
+        ) : v ? (
+          <Tag color="green">Enabled</Tag>
+        ) : (
+          <Tag color="red">Disabled</Tag>
+        ),
     },
     {
       title: 'Actions',
       key: 'actions',
       width: 160,
       render: (_, record) => (
-        <Space>
-          <Can module="USERS" action="UPDATE">
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => setModal({ open: true, mode: 'edit', record })}
-            >
-              Edit
-            </Button>
-          </Can>
-          <Can module="USERS" action="DELETE">
-            <Popconfirm
-              title="Delete this user?"
-              okText="Delete"
-              okButtonProps={{ danger: true }}
-              onConfirm={() => handleDelete(record)}
-            >
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Can>
-        </Space>
+        <RowActions
+          module="USERS"
+          record={record}
+          onEdit={(r) => setModal({ open: true, mode: 'edit', record: r })}
+          onDelete={handleDelete}
+          deleteTitle="Delete this user?"
+        />
       ),
     },
   ]

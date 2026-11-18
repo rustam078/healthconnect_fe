@@ -28,10 +28,13 @@ import AvailabilityEditorModal from './AvailabilityEditorModal.jsx'
 import { enumLabel } from '../../constants/enums.js'
 import { formatCurrency, formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
+import { usePermission } from '../auth/permissions.js'
 
 
 export default function DoctorDetailPage() {
   const { message } = App.useApp()
+  const { can } = usePermission()
+  const canEdit = can('DOCTORS', 'UPDATE')
   const navigate = useNavigate()
   const { doctorId: param } = useParams()
   const doctorId = Number(param)
@@ -133,9 +136,11 @@ export default function DoctorDetailPage() {
           <Card
             title="Weekly Availability"
             extra={
-              <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
-                Edit schedule
-              </Button>
+              canEdit && (
+                <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+                  Edit schedule
+                </Button>
+              )
             }
           >
             <WeekCalendar availability={availability} />
@@ -151,7 +156,7 @@ export default function DoctorDetailPage() {
                     <Tag
                       key={s.id}
                       color="cyan"
-                      closable
+                      closable={canEdit}
                       onClose={(e) => {
                         e.preventDefault()
                         handleRemove(s.id)
@@ -170,28 +175,30 @@ export default function DoctorDetailPage() {
                 )}
               </div>
 
-              <Space.Compact style={{ width: '100%' }}>
-                <Select
-                  mode="multiple"
-                  allowClear
-                  placeholder="Add specialties"
-                  style={{ width: '100%' }}
-                  loading={allSpecialties.isFetching}
-                  options={options}
-                  value={toAdd}
-                  onChange={setToAdd}
-                  maxTagCount="responsive"
-                />
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  loading={assignMutation.isPending}
-                  disabled={!toAdd.length}
-                  onClick={handleAssign}
-                >
-                  Assign
-                </Button>
-              </Space.Compact>
+              {canEdit && (
+                <Space.Compact style={{ width: '100%' }}>
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    placeholder="Add specialties"
+                    style={{ width: '100%' }}
+                    loading={allSpecialties.isFetching}
+                    options={options}
+                    value={toAdd}
+                    onChange={setToAdd}
+                    maxTagCount="responsive"
+                  />
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    loading={assignMutation.isPending}
+                    disabled={!toAdd.length}
+                    onClick={handleAssign}
+                  >
+                    Assign
+                  </Button>
+                </Space.Compact>
+              )}
             </Space>
           </Card>
         </Col>

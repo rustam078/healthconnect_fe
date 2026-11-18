@@ -1,8 +1,7 @@
-import { Button, Popconfirm, Space, Tag } from 'antd'
+import { Tag } from 'antd'
 import { Link } from 'react-router-dom'
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { enumLabel } from '../../constants/enums.js'
-import Can from '../auth/Can.jsx'
+import RowActions from '../../components/common/RowActions.jsx'
 
 const GENDER_COLOR = { MALE: 'blue', FEMALE: 'magenta', OTHER: 'default' }
 
@@ -44,23 +43,13 @@ export function getPatientColumns({ onEdit, onDelete }) {
       key: 'actions',
       width: 150,
       render: (_, record) => (
-        <Space>
-          <Can module="PATIENTS" action="UPDATE">
-            <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-              Edit
-            </Button>
-          </Can>
-          <Can module="PATIENTS" action="DELETE">
-            <Popconfirm
-              title="Delete this patient?"
-              okText="Delete"
-              okButtonProps={{ danger: true }}
-              onConfirm={() => onDelete(record)}
-            >
-              <Button size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Can>
-        </Space>
+        <RowActions
+          module="PATIENTS"
+          record={record}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          deleteTitle="Delete this patient?"
+        />
       ),
     },
   ]
