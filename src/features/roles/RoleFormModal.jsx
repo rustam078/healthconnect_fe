@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Modal, Form, Input, Select, Table, Checkbox, Spin, App } from 'antd'
+import { Drawer, Button, Space, Form, Input, Select, Table, Checkbox, Spin, Row, Col, App } from 'antd'
 import { useModules, useCreateRole, useUpdateRole } from './rolesHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -29,16 +29,11 @@ export default function RoleFormModal({ open, mode, initialValues, onClose }) {
   const actions = moduleData?.actions ?? []
   const [matrix, setMatrix] = useState({})
 
-  // Reset name, description and the permission matrix whenever the modal opens.
+  // Reset the permission matrix whenever the drawer opens (name/scope come from Form initialValues).
   useEffect(() => {
     if (!open) return
-    form.setFieldsValue({
-      name: initialValues?.name ?? '',
-      description: initialValues?.description ?? '',
-      dataScope: initialValues?.dataScope ?? 'SELF',
-    })
     setMatrix(toMatrix(initialValues?.permissions))
-  }, [open, initialValues, form])
+  }, [open, initialValues])
 
   const isChecked = (module, action) => (matrix[module] ?? []).includes(action)
 
@@ -65,7 +60,7 @@ export default function RoleFormModal({ open, mode, initialValues, onClose }) {
       .filter((p) => p.actions.length > 0)
     const payload = {
       name: values.name.trim(),
-      description: values.description?.trim() || null,
+      description: null,
       dataScope: values.dataScope,
       permissions,
     }
@@ -126,41 +121,56 @@ export default function RoleFormModal({ open, mode, initialValues, onClose }) {
   ]
 
   return (
-    <Modal
+    <Drawer
       open={open}
       width={640}
       title={isEdit ? 'Edit role' : 'New role'}
-      okText={isEdit ? 'Save' : 'Create'}
-      confirmLoading={submitting}
-      onOk={handleOk}
-      onCancel={onClose}
+      onClose={onClose}
       destroyOnHidden
+      footer={
+        <div style={{ textAlign: 'right' }}>
+          <Space>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="primary" loading={submitting} onClick={handleOk}>
+              {isEdit ? 'Save' : 'Create'}
+            </Button>
+          </Space>
+        </div>
+      }
     >
-      <Form form={form} layout="vertical" preserve={false}>
-        <Form.Item
-          name="name"
-          label="Name"
-          rules={[
-            { required: true, whitespace: true, message: 'Name is required' },
-            { max: 50, message: 'Name must not exceed 50 characters' },
-          ]}
-        >
-          <Input placeholder="e.g. Receptionist" />
-        </Form.Item>
-        <Form.Item
-          name="description"
-          label="Description"
-          rules={[{ max: 255, message: 'Description must not exceed 255 characters' }]}
-        >
-          <Input.TextArea rows={2} placeholder="Optional description" />
-        </Form.Item>
-        <Form.Item
-          name="dataScope"
-          label="Data scope"
-          rules={[{ required: true, message: 'Data scope is required' }]}
-        >
-          <Select options={DATA_SCOPE_OPTIONS} />
-        </Form.Item>
+      <Form
+        key={`${mode}-${initialValues?.id ?? 'new'}`}
+        form={form}
+        layout="vertical"
+        preserve={false}
+        initialValues={{
+          name: initialValues?.name ?? '',
+          dataScope: initialValues?.dataScope ?? 'SELF',
+        }}
+      >
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="name"
+              label="Name"
+              rules={[
+                { required: true, whitespace: true, message: 'Name is required' },
+                { max: 50, message: 'Name must not exceed 50 characters' },
+              ]}
+            >
+              <Input placeholder="e.g. Receptionist" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="dataScope"
+              label="Data scope"
+              rules={[{ required: true, message: 'Data scope is required' }]}
+            >
+              <Select options={DATA_SCOPE_OPTIONS} />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
 
       <Spin spinning={isLoading}>
@@ -170,9 +180,9 @@ export default function RoleFormModal({ open, mode, initialValues, onClose }) {
           pagination={false}
           columns={columns}
           dataSource={modules}
-          scroll={{ y: 320 }}
+          // scroll={{ y: 620 }}
         />
       </Spin>
-    </Modal>
+    </Drawer>
   )
 }

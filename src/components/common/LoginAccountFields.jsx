@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Form, Input, Select, Switch, Row, Col } from 'antd'
 import { useRoles } from '../../features/roles/rolesHooks.js'
+import { useUsernameTakenRule } from '../../features/users/usersHooks.js'
 
 // Builds the optional `login` payload from validated form values (undefined when toggled off).
 export function buildLoginPayload(values) {
@@ -15,6 +16,7 @@ export function buildLoginPayload(values) {
 // "Create login account" toggle that reveals username, password and role (create forms only).
 export default function LoginAccountFields({ form, defaultRoleName }) {
   const { data: roles } = useRoles()
+  const usernameTakenRule = useUsernameTakenRule()
   const enabled = Form.useWatch('createLogin', form)
   const email = Form.useWatch('email', form)
 
@@ -41,9 +43,12 @@ export default function LoginAccountFields({ form, defaultRoleName }) {
             <Form.Item
               name="username"
               label="Username"
+              hasFeedback
+              validateDebounce={300}
               rules={[
                 { required: true, whitespace: true, message: 'Username is required' },
                 { max: 100, message: 'Must not exceed 100 characters' },
+                usernameTakenRule,
               ]}
             >
               <Input />

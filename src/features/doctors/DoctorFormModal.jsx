@@ -1,4 +1,4 @@
-import { Modal, Form, Input, InputNumber, Select, DatePicker, Row, Col, Alert, App } from 'antd'
+import { Drawer, Button, Space, Form, Input, InputNumber, Select, DatePicker, Row, Col, Alert, App } from 'antd'
 import dayjs from 'dayjs'
 import { useCreateDoctor, useUpdateDoctor } from './doctorsHooks.js'
 import { useSpecialties } from '../specialties/specialtiesHooks.js'
@@ -98,15 +98,22 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
   }
 
   return (
-    <Modal
+    <Drawer
       open={open}
       width={660}
       title={isEdit ? 'Edit Doctor' : 'Add Doctor'}
-      okText={isEdit ? 'Save' : 'Create'}
-      confirmLoading={submitting}
-      onOk={handleOk}
-      onCancel={onClose}
+      onClose={onClose}
       destroyOnHidden
+      footer={
+        <div style={{ textAlign: 'right' }}>
+          <Space>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="primary" loading={submitting} onClick={handleOk}>
+              {isEdit ? 'Save' : 'Create'}
+            </Button>
+          </Space>
+        </div>
+      }
     >
       <Form
         key={`${mode}-${initialValues?.id ?? 'new'}`}
@@ -203,6 +210,20 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
           </Col>
         </Row>
 
+       <Row gutter={16}>
+          <Col span={12}>
+          <Form.Item name="specialtyIds" label="Specialties">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Select specialties"
+              optionFilterProp="label"
+               disabled={lockIdentity}
+              options={(specialtyData?.content ?? []).map((s) => ({ value: s.id, label: s.name }))}
+            />
+          </Form.Item>
+        </Col>
+          <Col span={12}>
         <Form.Item
           name="qualification"
           label="Qualification"
@@ -213,6 +234,8 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
         >
           <Input placeholder="e.g. MBBS, MD (Cardiology)" />
         </Form.Item>
+           </Col>
+        </Row>
 
         <Row gutter={16}>
           <Col span={12}>
@@ -241,17 +264,6 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
           </Col>
         </Row>
 
-        {!isEdit && (
-          <Form.Item name="specialtyIds" label="Specialties">
-            <Select
-              mode="multiple"
-              allowClear
-              placeholder="Select specialties"
-              optionFilterProp="label"
-              options={(specialtyData?.content ?? []).map((s) => ({ value: s.id, label: s.name }))}
-            />
-          </Form.Item>
-        )}
 
         {isEdit && linkedUser ? (
           <Alert
@@ -264,6 +276,6 @@ export default function DoctorFormModal({ open, mode, initialValues, onClose }) 
           <LoginAccountFields form={form} defaultRoleName="DOCTOR" />
         )}
       </Form>
-    </Modal>
+    </Drawer>
   )
 }

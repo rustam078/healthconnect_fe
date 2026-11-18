@@ -1,5 +1,5 @@
 import { Modal, Form, Input, Select, Switch, InputNumber, App } from 'antd'
-import { useCreateUser, useUpdateUser } from './usersHooks.js'
+import { useCreateUser, useUpdateUser, useUsernameTakenRule } from './usersHooks.js'
 import { useRoles } from '../roles/rolesHooks.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 
@@ -9,6 +9,7 @@ export default function UserFormModal({ open, mode, initialValues, onClose }) {
   const { data: roles } = useRoles()
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
+  const usernameTakenRule = useUsernameTakenRule()
   const isEdit = mode === 'edit'
   const submitting = createMutation.isPending || updateMutation.isPending
 
@@ -86,9 +87,12 @@ export default function UserFormModal({ open, mode, initialValues, onClose }) {
         <Form.Item
           name="username"
           label="Username"
+          hasFeedback={!isEdit}
+          validateDebounce={300}
           rules={[
             { required: true, whitespace: true, message: 'Username is required' },
             { max: 50, message: 'Username must not exceed 50 characters' },
+            ...(isEdit ? [] : [usernameTakenRule]),
           ]}
         >
           <Input placeholder="e.g. jsmith" disabled={isEdit} />

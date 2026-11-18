@@ -1,4 +1,4 @@
-import { Modal, Form, Input, Select, DatePicker, Row, Col, Alert, App } from 'antd'
+import { Drawer, Button, Space, Form, Input, Select, DatePicker, Row, Col, Alert, App } from 'antd'
 import dayjs from 'dayjs'
 import { useCreatePatient, useUpdatePatient } from './patientsHooks.js'
 import { useUsers, useCreateUser } from '../users/usersHooks.js'
@@ -19,8 +19,7 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
   const createUserMutation = useCreateUser()
   const { data: users } = useUsers()
   const isEdit = mode === 'edit'
-  const submitting =
-    createMutation.isPending || updateMutation.isPending || createUserMutation.isPending
+  const submitting = createMutation.isPending || updateMutation.isPending || createUserMutation.isPending
 
   // Backend patient-update only changes phone/email/address/bloodGroup, so
   // identity fields are shown read-only in edit mode.
@@ -92,15 +91,22 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
   }
 
   return (
-    <Modal
+    <Drawer
       open={open}
       width={640}
       title={isEdit ? 'Edit Patient' : 'Add Patient'}
-      okText={isEdit ? 'Save' : 'Create'}
-      confirmLoading={submitting}
-      onOk={handleOk}
-      onCancel={onClose}
+      onClose={onClose}
       destroyOnHidden
+      footer={
+        <div style={{ textAlign: 'right' }}>
+          <Space>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="primary" loading={submitting} onClick={handleOk}>
+              {isEdit ? 'Save' : 'Create'}
+            </Button>
+          </Space>
+        </div>
+      }
     >
       <Form
         key={`${mode}-${initialValues?.id ?? 'new'}`}
@@ -207,15 +213,17 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
               />
             </Form.Item>
           </Col>
-        </Row>
-
+          <Col span={12}>
         <Form.Item
           name="address"
           label="Address"
           rules={[{ max: 500, message: 'Must not exceed 500 characters' }]}
         >
-          <Input.TextArea rows={2} placeholder="Optional address" />
+          <Input.TextArea rows={1} placeholder="Optional address" />
         </Form.Item>
+          </Col>
+        </Row>
+
 
         {isEdit && linkedUser ? (
           <Alert
@@ -228,6 +236,6 @@ export default function PatientFormModal({ open, mode, initialValues, onClose })
           <LoginAccountFields form={form} defaultRoleName="CUSTOMER" />
         )}
       </Form>
-    </Modal>
+    </Drawer>
   )
 }

@@ -1,4 +1,4 @@
-import { Button, Popconfirm, Space, Tag } from 'antd'
+import { Button, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { enumLabel } from '../../constants/enums.js'
@@ -33,6 +33,23 @@ export function getDoctorColumns({ onEdit, onDelete }) {
         v ? <Tag color={GENDER_COLOR[v] || 'default'}>{enumLabel(v)}</Tag> : dash,
     },
     { title: 'Qualification', dataIndex: 'qualification', key: 'qualification', ellipsis: true },
+    {
+      title: 'Specialties',
+      key: 'specialties',
+      width: 180,
+      render: (_, r) => {
+        const [first, ...rest] = r.specialties ?? []
+        if (!first) return dash
+        return (
+          <Tooltip title={(r.specialties ?? []).join(', ')}>
+            <span>
+              <Tag color="cyan">{first}</Tag>
+              {rest.length > 0 && <Tag>+{rest.length}</Tag>}
+            </span>
+          </Tooltip>
+        )
+      },
+    },
     {
       title: 'Experience',
       dataIndex: 'experienceYears',
