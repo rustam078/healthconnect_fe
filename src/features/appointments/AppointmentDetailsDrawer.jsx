@@ -36,6 +36,8 @@ import { fmt12 } from './slots.js'
 import { formatDate } from '../../utils/format.js'
 import { getErrorMessage } from '../../utils/apiError.js'
 import { usePermission } from '../auth/permissions.js'
+import { useUsers } from '../users/usersHooks.js'
+import InitialAvatar from '../../components/common/InitialAvatar.jsx'
 
 const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 
@@ -80,6 +82,9 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
 
   // Straight off the appointment. It falls back to the id only if the server sent no name
   // at all, which no longer happens for a booking that has a patient.
+  const { data: users } = useUsers()
+  const doctorAvatarId = (users ?? []).find((u) => u.doctorId === a.doctorId)?.avatarFileId
+  const patientAvatarId = (users ?? []).find((u) => u.patientId === a.patientId)?.avatarFileId
   const patientName = a.patientName || (a.patientId != null ? `Patient #${a.patientId}` : '—')
   // The board hands the doctor down when it has one; otherwise the appointment's own name
   // covers it, so an appointment opened from anywhere still names its doctor.
@@ -227,8 +232,18 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
       }
     >
       <Descriptions column={1} size="small" colon={false}>
-        <Descriptions.Item label="Doctor">{doctorName}</Descriptions.Item>
-        <Descriptions.Item label="Patient">{patientName}</Descriptions.Item>
+        <Descriptions.Item label="Doctor">
+          <Space size={8}>
+            <InitialAvatar size={24} name={doctorName} avatarFileId={doctorAvatarId} />
+            {doctorName}
+          </Space>
+        </Descriptions.Item>
+        <Descriptions.Item label="Patient">
+          <Space size={8}>
+            <InitialAvatar size={24} name={patientName} avatarFileId={patientAvatarId} />
+            {patientName}
+          </Space>
+        </Descriptions.Item>
         <Descriptions.Item label="Date">{formatDate(a.appointmentDate) || '—'}</Descriptions.Item>
         <Descriptions.Item label="Time">{range}</Descriptions.Item>
         <Descriptions.Item label="Duration">

@@ -26,10 +26,13 @@ const authSlice = createSlice({
       state.permissions = []
       localStorage.removeItem('token')
     },
+    avatarUpdated(state, { payload }) {
+      if (state.user) state.user.avatarFileId = payload
+    },
   },
 })
 
-export const { loginSucceeded, permissionsLoaded, loggedOut } = authSlice.actions
+export const { loginSucceeded, permissionsLoaded, loggedOut, avatarUpdated } = authSlice.actions
 
 export const selectToken = (state) => state.auth.token
 export const selectUser = (state) => state.auth.user

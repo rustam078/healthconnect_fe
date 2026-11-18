@@ -1,6 +1,7 @@
-import { Card, Table, Typography, Alert } from 'antd'
+import { Card, Table, Typography, Alert, Space } from 'antd'
 import { Link } from 'react-router-dom'
 import { useDepartmentPatients } from './doctorPortalHooks.js'
+import InitialAvatar from '../../../components/common/InitialAvatar.jsx'
 import { getErrorMessage } from '../../../utils/apiError.js'
 
 // Every patient in the doctor's department; click one to open their full record.
@@ -13,9 +14,15 @@ export default function DoctorPatientsPage() {
     {
       title: 'Name',
       key: 'name',
-      render: (_, r) => (
-        <Link to={`/doctor/patients/${r.id}`}>{`${r.firstName ?? ''} ${r.lastName ?? ''}`.trim()}</Link>
-      ),
+      render: (_, r) => {
+        const fullName = `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim()
+        return (
+          <Space>
+            <InitialAvatar size={30} name={fullName} avatarFileId={r.avatarFileId} />
+            <Link to={`/doctor/patients/${r.id}`}>{fullName}</Link>
+          </Space>
+        )
+      },
     },
     { title: 'Age', dataIndex: 'age', key: 'age' },
     { title: 'Gender', dataIndex: 'gender', key: 'gender' },

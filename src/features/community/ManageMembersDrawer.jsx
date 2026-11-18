@@ -59,7 +59,7 @@ export default function ManageMembersDrawer({ open, onClose, community, onlineSe
               : []}
           >
             <List.Item.Meta
-              avatar={<InitialAvatar name={m.displayName} online={onlineSet?.has(m.userId)} size={38} />}
+              avatar={<InitialAvatar name={m.displayName} avatarFileId={m.avatarFileId} online={onlineSet?.has(m.userId)} size={38} />}
               title={<span>{m.displayName} {m.role === 'ADMIN' && <Tag color="cyan" style={{ marginLeft: 4 }}>Admin</Tag>}</span>}
               description={<Typography.Text type="secondary" style={{ fontSize: 12 }}>@{m.username}</Typography.Text>}
             />

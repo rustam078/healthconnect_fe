@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { DatePicker, Select, Space, Card, Button, Empty, Spin, Alert, Typography, Drawer, Input, App } from 'antd'
 import dayjs from 'dayjs'
 import { useSpecialties, useAvailableDoctors, useBookAppointment } from './customerPortalHooks.js'
@@ -45,15 +45,38 @@ export default function FindDoctorTab() {
       </Space>
     )
   }
+      useEffect(() => {
+        const list = specialties.data ?? [];
+
+        if (list.length > 0 && specialtyId == null) {
+          setSpecialtyId(list[0].id);
+        }
+      }, [specialties.data, specialtyId]);
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space wrap>
         <DatePicker value={date} format={DATE_FORMAT} onChange={setDate}
           disabledDate={(d) => d && d < dayjs().startOf('day')} />
-        <Select placeholder="Select a specialty" style={{ width: 240 }} loading={specialties.isLoading}
-          value={specialtyId} onChange={setSpecialtyId}
-          options={(specialties.data ?? []).map((s) => ({ value: s.id, label: s.name }))} />
+<Select
+  placeholder="Select a specialty"
+  style={{ width: 240 }}
+  loading={specialties.isLoading}
+  showSearch
+  filterOption={(input, option) =>
+    option?.label?.toLowerCase().includes(input.toLowerCase())
+  }
+  autoClearSearchValue
+  onSelect={() => {
+    document.activeElement?.blur();
+  }}
+  value={specialtyId}
+  onChange={setSpecialtyId}
+  options={(specialties.data ?? []).map((s) => ({
+    value: s.id,
+    label: s.name,
+  }))}
+/>
         <Typography.Text type="secondary">
           <span style={{ color: '#52c41a' }}>■</span> open &nbsp; <span style={{ color: '#ff4d4f' }}>■</span> occupied
         </Typography.Text>
@@ -66,7 +89,14 @@ export default function FindDoctorTab() {
       ) : doctors.isError ? (
         <Alert type="error" message={getErrorMessage(doctors.error)} />
       ) : (doctors.data ?? []).length === 0 ? (
-        <Empty description="No doctors available for that date — try another date." />
+          <Empty
+            description={
+              <span style={{ color: '#D97706', fontWeight: 500 }}>
+                No doctors are available for the selected date and time.
+                Please try another date to find available doctors.
+              </span>
+            }
+          />
       ) : (
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           {doctors.data.map((doctor) => (

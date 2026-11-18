@@ -18,6 +18,7 @@ import {
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons'
 import { usePatientDetails, usePatientAppointments } from './patientDetailHooks.js'
 import { useUsers } from '../users/usersHooks.js'
+import InitialAvatar from '../../components/common/InitialAvatar.jsx'
 import PatientFormModal from './PatientFormModal.jsx'
 import ConsultationView from '../consultations/ConsultationView.jsx'
 import { enumLabel } from '../../constants/enums.js'
@@ -118,10 +119,15 @@ export default function PatientDetailPage() {
         >
           Back to patients
         </Button>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {fullName || 'Patient'}
-        </Typography.Title>
-        <Typography.Text type="secondary">{patient.patientCode}</Typography.Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+          <InitialAvatar name={fullName} avatarFileId={linkedUser?.avatarFileId} size={64} />
+          <div>
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              {fullName || 'Patient'}
+            </Typography.Title>
+            <Typography.Text type="secondary">{patient.patientCode}</Typography.Text>
+          </div>
+        </div>
       </div>
 
       {/* The four numbers worth reading before anything else. A patient with 11 visits

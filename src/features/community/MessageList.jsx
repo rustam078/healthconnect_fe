@@ -43,7 +43,7 @@ function Bubble({ msg, mine, onDelete }) {
   )
   return (
     <div style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', gap: 8, margin: '8px 0' }}>
-      {!mine && <InitialAvatar name={msg.senderName} size={34} />}
+      {!mine && <InitialAvatar name={msg.senderName} avatarFileId={msg.senderAvatarFileId} size={34} />}
       <div style={{ maxWidth: '72%' }}>
         {!mine && <div style={{ fontSize: 12, color: BRAND.primary, fontWeight: 600, marginBottom: 2 }}>{msg.senderName}</div>}
         <div

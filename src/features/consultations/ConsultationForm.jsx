@@ -49,8 +49,8 @@ export default function ConsultationForm({ appointmentId, onDone, onCancel }) {
 
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
         <Form.Item
-          name="chiefComplaint"
-          label="Chief complaint"
+          name="Reason for Visit"
+          label="Reason for Visit"
           rules={[{ required: true, message: 'What did the patient come in with?' }]}
         >
           <TextArea rows={2} placeholder="e.g. Fever and headache for 3 days" />

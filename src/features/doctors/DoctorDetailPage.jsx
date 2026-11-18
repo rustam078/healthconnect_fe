@@ -23,6 +23,7 @@ import {
 } from './doctorDetailHooks.js'
 import { useSpecialties } from '../specialties/specialtiesHooks.js'
 import { useUsers } from '../users/usersHooks.js'
+import InitialAvatar from '../../components/common/InitialAvatar.jsx'
 import WeekCalendar from './WeekCalendar.jsx'
 import AvailabilityEditorModal from './AvailabilityEditorModal.jsx'
 import { enumLabel } from '../../constants/enums.js'
@@ -104,12 +105,21 @@ export default function DoctorDetailPage() {
         >
           Back to doctors
         </Button>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {[doctor.firstName, doctor.lastName].filter(Boolean).join(' ')}
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          {doctor.doctorCode} · {doctor.qualification}
-        </Typography.Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+          <InitialAvatar
+            name={[doctor.firstName, doctor.lastName].filter(Boolean).join(' ')}
+            avatarFileId={linkedUser?.avatarFileId}
+            size={64}
+          />
+          <div>
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              {[doctor.firstName, doctor.lastName].filter(Boolean).join(' ')}
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              {doctor.doctorCode} · {doctor.qualification}
+            </Typography.Text>
+          </div>
+        </div>
       </div>
 
       <Card title="Profile">

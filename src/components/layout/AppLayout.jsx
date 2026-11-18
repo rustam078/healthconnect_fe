@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Layout, Menu, Avatar, Dropdown, Badge } from 'antd'
-import { useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+import { Layout, Menu, Dropdown, Badge, App } from 'antd'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -8,7 +8,6 @@ import {
   ApartmentOutlined,
   CalendarOutlined,
   SettingOutlined,
-  UserOutlined,
   LogoutOutlined,
   IdcardOutlined,
   SolutionOutlined,
@@ -16,13 +15,17 @@ import {
   UsergroupAddOutlined,
   FileTextOutlined,
   MessageOutlined,
+  CameraOutlined,
 } from '@ant-design/icons'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { BRAND } from '../../app/theme.js'
 import { usePermission } from '../../features/auth/permissions.js'
 import { listMyCommunities } from '../../features/community/communityApi.js'
-import { loggedOut, selectUser } from '../../store/authSlice.js'
+import { uploadMyAvatar } from '../../features/users/usersApi.js'
+import InitialAvatar from '../common/InitialAvatar.jsx'
+import { loggedOut, selectUser, avatarUpdated } from '../../store/authSlice.js'
+import { getErrorMessage } from '../../utils/apiError.js'
 
 const { Header, Sider, Content } = Layout
 
@@ -103,6 +106,25 @@ export default function AppLayout() {
     staleTime: 0,
   })
   const unreadTotal = (myCommunities ?? []).reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+
+  const { message } = App.useApp()
+  const qc = useQueryClient()
+  const avatarInputRef = useRef(null)
+
+  // Upload the user's own profile photo, then reflect it immediately (header via redux, chat via refetch).
+  const onAvatarPick = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const res = await uploadMyAvatar(file)
+      dispatch(avatarUpdated(res.id))
+      qc.invalidateQueries({ queryKey: ['communities'] })
+      message.success('Profile photo updated')
+    } catch (err) {
+      message.error(getErrorMessage(err))
+    }
+  }
 
   // Build grouped menu items, keeping only viewable entries and dropping any empty group.
   const menuItems = NAV_GROUPS.map((group) => {
@@ -218,28 +240,23 @@ export default function AppLayout() {
           }}
         >
           <div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: BRAND.heading, lineHeight: 1.2 }}>
-              {currentTitle}
-            </div>
-            <div style={{ fontSize: 12, color: '#7C8B87' }}>HealthConnect Admin</div>
+            <div style={{ fontSize: 12, color: '#7C8B87' }}>Welcome {user?.name || 'Guest'}</div>
           </div>
           <Dropdown
             trigger={['click']}
             menu={{
               items: [
+                { key: 'photo', icon: <CameraOutlined />, label: 'Change photo', onClick: () => avatarInputRef.current?.click() },
                 { key: 'logout', icon: <LogoutOutlined />, label: 'Log out', onClick: handleLogout },
               ],
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <Avatar
-                size={36}
-                style={{ background: '#E6F4F1', color: BRAND.primary }}
-                icon={<UserOutlined />}
-              />
+              <InitialAvatar name={user?.username} avatarFileId={user?.avatarFileId} size={36} />
               <span style={{ color: '#33413E', fontWeight: 500 }}>{user?.username || 'Guest'}</span>
             </div>
           </Dropdown>
+          <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={onAvatarPick} />
         </Header>
 
         {/* minHeight keeps the tinted page background covering the full viewport on short

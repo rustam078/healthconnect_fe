@@ -39,7 +39,7 @@ export default function PrescriptionModal({ appointmentId, open, onClose }) {
           ) : (
             <>
               <Descriptions column={1} size="small" bordered>
-                <Descriptions.Item label="Chief complaint">{data?.chiefComplaint || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Reason for Visit">{data?.chiefComplaint || '-'}</Descriptions.Item>
                 <Descriptions.Item label="Diagnosis">{data?.diagnosis || '-'}</Descriptions.Item>
                 <Descriptions.Item label="Notes">{data?.notes || '-'}</Descriptions.Item>
               </Descriptions>

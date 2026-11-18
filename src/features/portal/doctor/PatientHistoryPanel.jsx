@@ -77,7 +77,7 @@ export default function PatientHistoryPanel({ patientId }) {
             {dayjs(detail.appointmentDate).format('DD MMM YYYY')} {fmtTime(detail.startTime)}
           </Descriptions.Item>
           <Descriptions.Item label="Doctor">{detail.doctorName || '—'}</Descriptions.Item>
-          <Descriptions.Item label="Chief complaint">{detail.consultation?.chiefComplaint || '—'}</Descriptions.Item>
+          <Descriptions.Item label="Reason for Visit">{detail.consultation?.chiefComplaint || '—'}</Descriptions.Item>
           <Descriptions.Item label="Diagnosis">{detail.consultation?.diagnosis || '—'}</Descriptions.Item>
           <Descriptions.Item label="Notes / Advice">{detail.consultation?.notes || '—'}</Descriptions.Item>
         </Descriptions>

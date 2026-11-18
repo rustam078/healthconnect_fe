@@ -1,6 +1,36 @@
+import { useEffect, useState } from 'react'
 import { Avatar, Badge } from 'antd'
 
-// Initials from a person's name until a profile image exists; pass imageUrl later to show the photo.
+// Profile images are permission-guarded, so <img> can't load them directly (no token). We fetch
+// each avatar once (with the token), cache the blob URL by fileId, and reuse it everywhere.
+const avatarCache = new Map() // fileId -> Promise<blobUrl|null>
+
+function loadAvatar(fileId) {
+  if (avatarCache.has(fileId)) return avatarCache.get(fileId)
+  const token = localStorage.getItem('token')
+  const promise = fetch(`/api/v1/files/${fileId}`, { headers: { Authorization: `Bearer ${token}` } })
+    .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('avatar load failed'))))
+    .then((blob) => URL.createObjectURL(blob))
+    .catch(() => null)
+  avatarCache.set(fileId, promise)
+  return promise
+}
+
+function useAvatarUrl(fileId) {
+  const [url, setUrl] = useState(null)
+  useEffect(() => {
+    if (!fileId) {
+      setUrl(null)
+      return undefined
+    }
+    let active = true
+    loadAvatar(fileId).then((u) => { if (active) setUrl(u) })
+    return () => { active = false }
+  }, [fileId])
+  return url
+}
+
+// Initials from a person's name until a profile image exists; pass avatarFileId to show the photo.
 function initials(name) {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -17,20 +47,22 @@ function shadeFor(name) {
   return SHADES[hash % SHADES.length]
 }
 
-export default function InitialAvatar({ name, imageUrl, size = 40, online }) {
+export default function InitialAvatar({ name, avatarFileId, imageUrl, size = 40, online }) {
+  const fetchedUrl = useAvatarUrl(avatarFileId)
+  const src = imageUrl || fetchedUrl
   const avatar = (
     <Avatar
       size={size}
-      src={imageUrl || undefined}
+      src={src || undefined}
       style={{
-        backgroundColor: imageUrl ? undefined : shadeFor(name),
+        backgroundColor: src ? undefined : shadeFor(name),
         color: '#fff',
         fontWeight: 600,
         fontSize: Math.round(size * 0.4),
         flexShrink: 0,
       }}
     >
-      {!imageUrl && initials(name)}
+      {!src && initials(name)}
     </Avatar>
   )
   if (online === undefined) return avatar

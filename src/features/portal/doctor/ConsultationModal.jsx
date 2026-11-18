@@ -85,7 +85,7 @@ export default function ConsultationModal({ appointment, open, onClose }) {
           {loadFailed && (
             <Typography.Text type="danger">{getErrorMessage(error)}</Typography.Text>
           )}
-          <Form.Item name="chiefComplaint" label="Chief complaint">
+          <Form.Item name="chiefComplaint" label="Reason for Visit">
             <Input.TextArea rows={2} placeholder="e.g. Persistent cough for 5 days" />
           </Form.Item>
           <Form.Item name="diagnosis" label="Diagnosis">

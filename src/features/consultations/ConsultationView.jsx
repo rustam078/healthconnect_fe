@@ -66,7 +66,7 @@ export default function ConsultationView({ appointmentId, enabled, fileLabel }) 
         </Button>
       </Space>
       <Descriptions column={1} size="small" colon={false}>
-        <Descriptions.Item label="Chief complaint">{data.chiefComplaint || '—'}</Descriptions.Item>
+        <Descriptions.Item label="Reason for Visit">{data.chiefComplaint || '—'}</Descriptions.Item>
         <Descriptions.Item label="Diagnosis">{data.diagnosis || '—'}</Descriptions.Item>
         <Descriptions.Item label="Notes">{data.notes || '—'}</Descriptions.Item>
       </Descriptions>

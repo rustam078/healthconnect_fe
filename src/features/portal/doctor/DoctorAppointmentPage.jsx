@@ -27,7 +27,7 @@ const MED_FIELDS = [
   { name: 'dosage', placeholder: 'Dosage', flex: 1 },
   { name: 'frequency', placeholder: 'Frequency', flex: 1 },
   { name: 'duration', placeholder: 'Duration', flex: 1 },
-  { name: 'instructions', placeholder: 'Remarks', flex: 1.4 },
+  { name: 'instructions', placeholder: 'Instructions', flex: 1.4 },
 ]
 const SEVERITY = ['MILD', 'MODERATE', 'SEVERE']
 const fmtDate = (d) => (d ? dayjs(d).format('DD MMM YYYY') : '—')
@@ -197,56 +197,106 @@ export default function DoctorAppointmentPage() {
       )}
     </Space>
   ) : null
-
-  const consultationTab = (
-    <Form form={form} layout="vertical" disabled={readOnly}>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Text strong>Chief Complaint</Typography.Text>
-        <div style={{ marginTop: 4, padding: '8px 12px', background: '#f5f8fa', borderRadius: 6, color: '#33413E' }}>
-          {ws?.reason || 'Not provided by patient'}
+const consultationTab = (
+  <Form form={form} layout="vertical" disabled={readOnly}>
+    <Row gutter={24}>
+      {/* LEFT SIDE - 40% */}
+      <Col xs={24} lg={10}>
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Text strong>Reason for Visit</Typography.Text>
+          <div style={{
+            marginTop: 4,
+            padding: '8px 12px',
+            background: '#f5f8fa',
+            borderRadius: 6,
+            color: '#33413E'
+          }}>
+            {ws?.reason || 'Not provided by patient'}
+          </div>
         </div>
-      </div>
-      <Row gutter={16}>
-        <Col xs={24} md={14}>
-          <Form.Item name="diagnosis" label="Diagnosis">
-            <Input placeholder="Enter diagnosis" />
-          </Form.Item>
-        </Col>
-        <Col xs={24} md={10}>
-          <Form.Item name="severity" label="Severity">
-            <Segmented options={SEVERITY.map((s) => ({ label: s.charAt(0) + s.slice(1).toLowerCase(), value: s }))} />
-          </Form.Item>
-        </Col>
-      </Row>
-      <Form.Item name="notes" label="Clinical Notes">
-        <Input.TextArea rows={3} maxLength={2000} showCount placeholder="Enter clinical notes..." />
-      </Form.Item>
 
-      <Divider orientation="left">Medicines &amp; Treatment</Divider>
-      <Form.List name="medicines">
-        {(fields, { add, remove }) => (
-          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-            {fields.map((field) => (
-              <Space key={field.key} align="baseline" style={{ display: 'flex' }} wrap>
-                {MED_FIELDS.map((m) => (
-                  <Form.Item key={m.name} name={[field.name, m.name]}
-                    style={{ flex: m.flex, marginBottom: 0, minWidth: 120 }}
-                    rules={m.required ? [{ required: true, whitespace: true, message: 'Required' }] : []}>
-                    <Input placeholder={m.placeholder} />
-                  </Form.Item>
-                ))}
-                {!readOnly && <MinusCircleOutlined onClick={() => remove(field.name)} />}
-              </Space>
-            ))}
-            {!readOnly && (
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add(EMPTY_MED)} block>Add Medicine</Button>
-            )}
-          </Space>
-        )}
-      </Form.List>
-    </Form>
-  )
+        <Form.Item name="diagnosis" label="Diagnosis">
+          <Input placeholder="Enter diagnosis" />
+        </Form.Item>
 
+
+
+        <Form.Item name="notes" label="Clinical Notes">
+          <Input.TextArea
+            rows={5}
+            maxLength={2000}
+            showCount
+            placeholder="Enter clinical notes..."
+          />
+        </Form.Item>
+      </Col>
+
+      {/* RIGHT SIDE - 60% */}
+      <Col xs={24} lg={14}>
+        <Form.Item name="severity" label="Severity">
+          <Segmented
+            block
+            options={SEVERITY.map((s) => ({
+              label: s.charAt(0) + s.slice(1).toLowerCase(),
+              value: s
+            }))}
+          />
+        </Form.Item>
+
+        <Form.List name="medicines">
+          {(fields, { add, remove }) => (
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              {fields.map((field) => (
+                <Card
+                  key={field.key}
+                  size="small"
+                  style={{ background: '#fafafa' }}
+                  bodyStyle={{ padding: '12px' }}
+                >
+                  <Row gutter={8} align="middle" wrap={false}>
+                    {MED_FIELDS.map((m) => (
+                      <Col flex="1" key={m.name} style={{ minWidth: 0 }}>
+                        <Form.Item
+                          name={[field.name, m.name]}
+                          style={{ marginBottom: 0 }}
+                          rules={m.required ? [
+                            { required: true, whitespace: true, message: 'Required' }
+                          ] : []}
+                        >
+                          <Input placeholder={m.placeholder} />
+                        </Form.Item>
+                      </Col>
+                    ))}
+
+                    {!readOnly && (
+                      <Col flex="24px">
+                        <MinusCircleOutlined
+                          style={{ color: '#ff4d4f', cursor: 'pointer' }}
+                          onClick={() => remove(field.name)}
+                        />
+                      </Col>
+                    )}
+                  </Row>
+                </Card>
+              ))}
+
+              {!readOnly && (
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  onClick={() => add(EMPTY_MED)}
+                  block
+                >
+                  Add Medicine
+                </Button>
+              )}
+            </Space>
+          )}
+        </Form.List>
+      </Col>
+    </Row>
+  </Form>
+)
   const testsTab = (
     <Table rowKey="id" size="small" pagination={false} columns={testColumns}
       dataSource={ordered} scroll={{ x: 560 }}
