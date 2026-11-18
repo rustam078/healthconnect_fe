@@ -67,7 +67,7 @@ export default function MessageComposer({ communityId, onSend }) {
         />
         <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={submit} style={{ flexShrink: 0 }} />
       </div>
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={onFile} />
+      <input ref={inputRef} type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" hidden onChange={onFile} />
     </div>
   )
 }

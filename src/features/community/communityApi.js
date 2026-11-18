@@ -18,10 +18,12 @@ export const sendMessage = (id, payload) => axiosClient.post(`/communities/${id}
 export const deleteMessage = (id, messageId) => axiosClient.delete(`/communities/${id}/messages/${messageId}`)
 
 // Upload a chat image/file, scoped to this community so only its members can view it.
+// Content-Type is set to undefined so the browser adds the correct multipart boundary itself —
+// hardcoding 'multipart/form-data' omits the boundary and corrupts the uploaded bytes.
 export const uploadChatFile = (communityId, file) => {
   const form = new FormData()
   form.append('file', file)
   form.append('category', 'COMMUNITY_CHAT')
   form.append('referenceId', communityId)
-  return axiosClient.post('/files', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+  return axiosClient.post('/files', form, { headers: { 'Content-Type': undefined } })
 }

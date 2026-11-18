@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Button, Popconfirm, Spin, Image } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { Button, Popconfirm, Spin } from 'antd'
+import { DeleteOutlined, FileOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import InitialAvatar from '../../components/common/InitialAvatar.jsx'
+import { AuthedImage, openAuthedFile } from './AuthedFile.jsx'
 import { BRAND } from '../../app/theme.js'
 
 const time = (ts) => (ts ? dayjs(ts).format('HH:mm') : '')
@@ -17,15 +18,35 @@ function SystemLine({ body }) {
   )
 }
 
-function Bubble({ msg, mine, onDelete }) {
-  const align = mine ? 'flex-end' : 'flex-start'
+// Non-image attachment: a compact card that opens the file (fetched with auth) in a new tab.
+function FileCard({ id, name, mine }) {
   return (
-    <div style={{ display: 'flex', justifyContent: align, gap: 8, margin: '8px 0' }}>
+    <button type="button" onClick={() => openAuthedFile(id)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', maxWidth: 240, width: '100%',
+        background: mine ? 'rgba(255,255,255,0.18)' : 'rgba(15,118,110,0.07)',
+        border: 'none', borderRadius: 8, color: 'inherit', cursor: 'pointer', textAlign: 'left',
+      }}>
+      <FileOutlined style={{ fontSize: 20, flexShrink: 0 }} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || 'File'}</span>
+    </button>
+  )
+}
+
+function Bubble({ msg, mine, onDelete }) {
+  const isImage = msg.type === 'IMAGE' && msg.attachmentId
+  const isFile = msg.type === 'FILE' && msg.attachmentId
+  const timeEl = (
+    <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 'auto', alignSelf: 'flex-end', whiteSpace: 'nowrap', paddingLeft: 10, lineHeight: 1.6 }}>
+      {time(msg.createdAt)}
+    </span>
+  )
+  return (
+    <div style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', gap: 8, margin: '8px 0' }}>
       {!mine && <InitialAvatar name={msg.senderName} size={34} />}
       <div style={{ maxWidth: '72%' }}>
         {!mine && <div style={{ fontSize: 12, color: BRAND.primary, fontWeight: 600, marginBottom: 2 }}>{msg.senderName}</div>}
         <div
-          className="chat-bubble"
           style={{
             background: mine ? BRAND.primary : '#fff',
             color: mine ? '#fff' : '#20302C',
@@ -33,21 +54,26 @@ function Bubble({ msg, mine, onDelete }) {
             borderRadius: 14,
             borderTopRightRadius: mine ? 4 : 14,
             borderTopLeftRadius: mine ? 14 : 4,
-            padding: msg.attachmentId ? 6 : '8px 12px',
+            padding: isImage || isFile ? 5 : 0,
             boxShadow: '0 1px 1px rgba(16,40,36,0.05)',
+            overflow: 'hidden',
           }}
         >
-          {msg.attachmentId && (
-            <Image src={`/api/v1/files/${msg.attachmentId}`} alt="attachment"
-              style={{ maxWidth: 240, borderRadius: 10, display: 'block' }} />
+          {isImage && (
+            <AuthedImage fileId={msg.attachmentId} alt={msg.attachmentName || 'image'}
+              style={{ maxWidth: 240, borderRadius: 9, display: 'block' }} />
           )}
-          {msg.body && <div style={{ padding: msg.attachmentId ? '6px 6px 2px' : 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.body}</div>}
-          <div style={{ fontSize: 10, textAlign: 'right', marginTop: 2, opacity: 0.65 }}>{time(msg.createdAt)}</div>
+          {isFile && <FileCard id={msg.attachmentId} name={msg.attachmentName} mine={mine} />}
+          {/* WhatsApp-style: text + time share the last line, time small and bottom-right */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap', padding: isImage || isFile ? '4px 5px 0' : '6px 11px 5px' }}>
+            {msg.body && <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.body}</span>}
+            {timeEl}
+          </div>
         </div>
       </div>
       {mine && (
         <Popconfirm title="Delete message?" onConfirm={() => onDelete(msg.id)}>
-          <Button type="text" size="small" className="del-btn" icon={<DeleteOutlined />} style={{ color: '#9AA7A3', alignSelf: 'center' }} />
+          <Button type="text" size="small" icon={<DeleteOutlined />} style={{ color: '#9AA7A3', alignSelf: 'center' }} />
         </Popconfirm>
       )}
     </div>
@@ -82,7 +108,6 @@ export default function MessageList({ messages, currentUserId, hasMore, loadingO
 
   return (
     <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', background: BRAND.pageBg }}>
-      <style>{`.chat-bubble .del-btn{opacity:0} .del-btn{transition:opacity .15s}`}</style>
       {loadingOlder && <div style={{ textAlign: 'center', padding: 8 }}><Spin size="small" /></div>}
       {messages.map((m) =>
         m.type === 'SYSTEM'

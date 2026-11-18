@@ -63,7 +63,11 @@ export default function ChatPane({ community, currentUserId, liveRef, onManage, 
       .catch(() => setLoadingOlder(false))
   }
 
-  const send = (payload) => api.sendMessage(id, payload)
+  // Append the sent message immediately (instant feedback); the SSE echo is de-duped by id.
+  const send = async (payload) => {
+    const msg = await api.sendMessage(id, payload)
+    setMessages((prev) => (prev.some((x) => x.id === msg.id) ? prev : [...prev, msg]))
+  }
   const remove = (mid) => api.deleteMessage(id, mid).catch((e) => message.error(getErrorMessage(e)))
 
   const leave = () => leaveGroup.mutate({ id, memberId: currentUserId }, {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Layout, Menu, Avatar, Dropdown } from 'antd'
+import { Layout, Menu, Avatar, Dropdown, Badge } from 'antd'
+import { useQuery } from '@tanstack/react-query'
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -20,6 +21,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { BRAND } from '../../app/theme.js'
 import { usePermission } from '../../features/auth/permissions.js'
+import { listMyCommunities } from '../../features/community/communityApi.js'
 import { loggedOut, selectUser } from '../../store/authSlice.js'
 
 const { Header, Sider, Content } = Layout
@@ -89,11 +91,37 @@ export default function AppLayout() {
   const user = useSelector(selectUser)
   const { canView } = usePermission()
 
+  // Live-ish unread total for the Community nav badge: refetch only while the tab is focused
+  // (no background polling, no persistent connection). On the chat page SSE keeps it instant.
+  const { data: myCommunities } = useQuery({
+    queryKey: ['communities'],
+    queryFn: listMyCommunities,
+    enabled: canView('COMMUNITIES'),
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true, // app-wide default is false; badge needs the focus refetch
+    staleTime: 0,
+  })
+  const unreadTotal = (myCommunities ?? []).reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+
   // Build grouped menu items, keeping only viewable entries and dropping any empty group.
   const menuItems = NAV_GROUPS.map((group) => {
     const children = group.items
       .filter((n) => canView(n.module))
-      .map(({ key, icon, title }) => ({ key, icon, label: <Link to={key}>{title}</Link> }))
+      .map(({ key, icon, title }) => ({
+        key,
+        icon,
+        label: key === '/community' ? (
+          <Link to={key}>
+            {title}
+            {unreadTotal > 0 && (
+              <Badge count={unreadTotal} size="small" style={{ marginInlineStart: 8, boxShadow: 'none' }} />
+            )}
+          </Link>
+        ) : (
+          <Link to={key}>{title}</Link>
+        ),
+      }))
     return children.length ? { key: group.key, type: 'group', label: group.label, children } : null
   }).filter(Boolean)
 
