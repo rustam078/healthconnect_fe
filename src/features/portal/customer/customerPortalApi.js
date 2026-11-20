@@ -1,7 +1,8 @@
 import axiosClient from '../../../api/axiosClient.js'
 
+// Shared specialties endpoint (any logged-in role may read it); returns the page's content array.
 export function getSpecialties() {
-  return axiosClient.get('/customer-portal/specialties')
+  return axiosClient.get('/specialties', { params: { size: 1000 } }).then((page) => page?.content ?? [])
 }
 
 export function getAvailableDoctors({ specialtyId, date }) {

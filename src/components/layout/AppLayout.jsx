@@ -157,7 +157,6 @@ export default function AppLayout() {
       .filter((k) => k !== '/' && location.pathname.startsWith(k))
       .sort((a, b) => b.length - a.length)[0] || '/'
 
-  const currentTitle = ALL_NAV.find((n) => n.key === selectedKey)?.title || 'HealthConnect'
 
   return (
     <Layout style={{ minHeight: FULL_HEIGHT }}>

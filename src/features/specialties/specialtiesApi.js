@@ -1,6 +1,6 @@
 import axiosClient from '../../api/axiosClient.js'
 
-export function getSpecialties({ search, page = 0, size = 20 }) {
+export function getSpecialties({ search, page = 0, size = 1000 }) {
   return axiosClient.get('/specialties', {
     params: {
       search: search || undefined,

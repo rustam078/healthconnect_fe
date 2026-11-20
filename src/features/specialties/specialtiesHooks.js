@@ -6,7 +6,7 @@ import {
   deleteSpecialty,
 } from './specialtiesApi.js'
 
-export function useSpecialties({ search, page = 1, size = 20 }) {
+export function useSpecialties({ search, page = 1, size = 1000 } = {}) {
   return useQuery({
     queryKey: ['specialties', { search, page, size }],
     queryFn: () => getSpecialties({ search, page: page - 1, size }),

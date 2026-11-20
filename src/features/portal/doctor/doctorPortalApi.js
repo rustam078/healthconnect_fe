@@ -34,8 +34,9 @@ export function scheduleFollowUp(appointmentId, payload) {
   return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/follow-up`, payload)
 }
 
+// Shared specialties endpoint (any logged-in role may read it); returns the page's content array.
 export function getDoctorSpecialties() {
-  return axiosClient.get('/doctor-portal/specialties')
+  return axiosClient.get('/specialties', { params: { size: 1000 } }).then((page) => page?.content ?? [])
 }
 
 export function referPatient(appointmentId, payload) {
