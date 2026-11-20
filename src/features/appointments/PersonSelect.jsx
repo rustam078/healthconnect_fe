@@ -26,6 +26,7 @@ export default function PersonSelect({
   queryKey,
   placeholder,
   enabled = true,
+  style,
 }) {
   const [typed, setTyped] = useState('')
   const [term, setTerm] = useState('')
@@ -77,6 +78,7 @@ export default function PersonSelect({
     <Select
       showSearch
       allowClear
+      style={style}
       placeholder={placeholder}
       value={value}
       loading={isFetching}

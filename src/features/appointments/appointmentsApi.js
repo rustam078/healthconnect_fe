@@ -11,6 +11,14 @@ export function getAppointmentsByDoctor(doctorId, appointmentDate) {
   })
 }
 
+// GET /appointments → admin's paginated, filtered list of every doctor's appointments.
+// The server sorts latest-created first; undefined filters are dropped by axios.
+export function searchAppointments({ doctorId, appointmentId, patientId, patientName, status, dateFrom, dateTo, page = 0, size = 20 }) {
+  return axiosClient.get('/appointments', {
+    params: { doctorId, appointmentId, patientId, patientName, status, dateFrom, dateTo, page, size },
+  })
+}
+
 // Move an appointment to another status. Which moves are legal is decided by the backend's
 // state machine, so an illegal one comes back as a 400 with the reason, not a silent no-op.
 export function updateAppointmentStatus(id, status) {

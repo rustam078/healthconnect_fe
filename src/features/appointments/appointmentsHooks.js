@@ -1,10 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import {
   createAppointment,
   updateAppointmentStatus,
   rescheduleAppointment,
   cancelAppointment,
+  searchAppointments,
 } from './appointmentsApi.js'
+
+// Admin appointment search (latest created first). page is 1-based in the UI, 0-based on the API.
+export function useAppointmentSearch(filters, page, size = 20) {
+  return useQuery({
+    queryKey: ['appointments', 'search', filters, page, size],
+    queryFn: () => searchAppointments({ ...filters, page: page - 1, size }),
+    placeholderData: keepPreviousData,
+  })
+}
 
 export function useCreateAppointment() {
   const qc = useQueryClient()
