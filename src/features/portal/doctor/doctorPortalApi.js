@@ -51,16 +51,18 @@ export function getHistoryDetail(appointmentId) {
   return axiosClient.get(`/doctor-portal/history/${appointmentId}`)
 }
 
+// Shared appointment endpoints (ownership enforced server-side by the resource guard):
+// a doctor reads/writes only their own visit; the consultation POST also marks it COMPLETED.
 export function getConsultation(appointmentId) {
-  return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/consultation`)
+  return axiosClient.get(`/appointments/${appointmentId}/consultation`)
 }
 
 export function saveConsultation(appointmentId, payload) {
-  return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/consultation`, payload)
+  return axiosClient.post(`/appointments/${appointmentId}/consultation`, payload)
 }
 
 export function completeAppointment(appointmentId) {
-  return axiosClient.put(`/doctor-portal/appointments/${appointmentId}/complete`)
+  return axiosClient.patch(`/appointments/${appointmentId}/status`, null, { params: { status: 'COMPLETED' } })
 }
 
 export function getPatientHistory(patientId) {

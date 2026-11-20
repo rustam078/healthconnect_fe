@@ -62,7 +62,7 @@ export default function PatientHistoryTab({ patientId: externalId = null, search
       <Drawer title="Prescription" placement="right" width={680} open={pdfFor != null}
         onClose={() => setPdfFor(null)} destroyOnHidden>
         {pdfFor && (
-          <PdfViewer url={`/doctor-portal/appointments/${pdfFor}/consultation/pdf`}
+          <PdfViewer url={`/appointments/${pdfFor}/consultation/pdf`}
             height="calc(100vh - 140px)" emptyText="No prescription recorded for this visit." />
         )}
       </Drawer>

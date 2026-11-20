@@ -74,7 +74,7 @@ export default function PrescriptionModal({ appointmentId, open, onClose }) {
           {!notFound && (
             <>
               <Divider orientation="left">Prescription PDF</Divider>
-              <PdfViewer url={`/customer-portal/appointments/${appointmentId}/consultation/pdf`} />
+              <PdfViewer url={`/appointments/${appointmentId}/consultation/pdf`} emptyText="No prescription recorded for this visit." />
             </>
           )}
         </>

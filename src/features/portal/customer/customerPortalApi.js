@@ -23,8 +23,9 @@ export function cancelAppointment(id) {
   return axiosClient.delete(`/customer-portal/appointments/${id}`)
 }
 
+// Shared appointment endpoint; the resource guard lets a patient read only their own visit.
 export function getConsultation(appointmentId) {
-  return axiosClient.get(`/customer-portal/appointments/${appointmentId}/consultation`)
+  return axiosClient.get(`/appointments/${appointmentId}/consultation`)
 }
 
 export function getMyReports() {

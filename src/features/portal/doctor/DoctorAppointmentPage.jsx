@@ -445,7 +445,7 @@ const consultationTab = (
       </Row>
 
       <PdfModal title="Prescription" open={showPdf} onClose={() => setShowPdf(false)}
-        url={showPdf ? `/doctor-portal/appointments/${appointmentId}/consultation/pdf` : null} />
+        url={showPdf ? `/appointments/${appointmentId}/consultation/pdf` : null} />
 
       <Drawer title={previewReport?.title || 'Report'} placement="right" width={680}
         open={Boolean(previewReport)} onClose={() => setPreviewReport(null)} destroyOnHidden>

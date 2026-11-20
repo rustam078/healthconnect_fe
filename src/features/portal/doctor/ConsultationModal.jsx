@@ -157,7 +157,7 @@ export default function ConsultationModal({ appointment, open, onClose }) {
           </Button>
           {showPdf && appointmentId && (
             <div style={{ marginTop: 12 }}>
-              <PdfViewer url={`/doctor-portal/appointments/${appointmentId}/consultation/pdf`} />
+              <PdfViewer url={`/appointments/${appointmentId}/consultation/pdf`} />
             </div>
           )}
         </Form>
