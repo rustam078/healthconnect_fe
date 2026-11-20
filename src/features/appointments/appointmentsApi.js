@@ -19,6 +19,11 @@ export function searchAppointments({ doctorId, appointmentId, patientId, patient
   })
 }
 
+// GET /appointments/{id}/detail → HistoryDetailResponse (consultation, ordered tests, reports).
+export function getAppointmentDetail(id) {
+  return axiosClient.get(`/appointments/${id}/detail`)
+}
+
 // Move an appointment to another status. Which moves are legal is decided by the backend's
 // state machine, so an illegal one comes back as a 400 with the reason, not a silent no-op.
 export function updateAppointmentStatus(id, status) {

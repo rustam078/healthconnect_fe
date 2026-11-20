@@ -8,6 +8,14 @@ import { BRAND } from '../../app/theme.js'
 
 const time = (ts) => (ts ? dayjs(ts).format('HH:mm') : '')
 
+// WhatsApp-style day label: Today / Yesterday for the recent two, full date for older.
+const dayLabel = (ts) => {
+  const d = dayjs(ts)
+  if (d.isSame(dayjs(), 'day')) return 'Today'
+  if (d.isSame(dayjs().subtract(1, 'day'), 'day')) return 'Yesterday'
+  return d.format('D MMMM YYYY')
+}
+
 function SystemLine({ body }) {
   return (
     <div style={{ textAlign: 'center', margin: '10px 0' }}>
@@ -16,6 +24,34 @@ function SystemLine({ body }) {
       </span>
     </div>
   )
+}
+
+// Centered date separator marking where one day's chat ends and the next begins.
+function DayDivider({ label }) {
+  return (
+    <div style={{ textAlign: 'center', margin: '14px 0 6px' }}>
+      <span style={{ background: '#DDEBE8', color: '#45574F', fontSize: 11.5, fontWeight: 600, padding: '3px 12px', borderRadius: 12, boxShadow: '0 1px 1px rgba(16,40,36,0.05)' }}>
+        {label}
+      </span>
+    </div>
+  )
+}
+
+// Walk the (chronological) messages, slipping a day divider in before the first of each date.
+function withDayDividers(messages, currentUserId, onDelete) {
+  const out = []
+  let lastDate = null
+  for (const m of messages) {
+    const date = m.createdAt ? dayjs(m.createdAt).format('YYYY-MM-DD') : null
+    if (date && date !== lastDate) {
+      out.push(<DayDivider key={`day-${date}`} label={dayLabel(m.createdAt)} />)
+      lastDate = date
+    }
+    out.push(m.type === 'SYSTEM'
+      ? <SystemLine key={m.id} body={m.body} />
+      : <Bubble key={m.id} msg={m} mine={m.senderId === currentUserId} onDelete={onDelete} />)
+  }
+  return out
 }
 
 // Non-image attachment: a compact card that opens the file (fetched with auth) in a new tab.
@@ -109,11 +145,7 @@ export default function MessageList({ messages, currentUserId, hasMore, loadingO
   return (
     <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', background: BRAND.pageBg }}>
       {loadingOlder && <div style={{ textAlign: 'center', padding: 8 }}><Spin size="small" /></div>}
-      {messages.map((m) =>
-        m.type === 'SYSTEM'
-          ? <SystemLine key={m.id} body={m.body} />
-          : <Bubble key={m.id} msg={m} mine={m.senderId === currentUserId} onDelete={onDelete} />,
-      )}
+      {withDayDividers(messages, currentUserId, onDelete)}
     </div>
   )
 }

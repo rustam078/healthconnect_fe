@@ -3,6 +3,7 @@ import {
   Drawer,
   Descriptions,
   Tag,
+  Table,
   Button,
   Space,
   Dropdown,
@@ -30,7 +31,9 @@ import {
   useUpdateAppointmentStatus,
   useRescheduleAppointment,
   useCancelAppointment,
+  useAppointmentDetail,
 } from './appointmentsHooks.js'
+import ReportsViewer from '../../components/common/ReportsViewer.jsx'
 import TimeOfDayField from './TimeOfDayField.jsx'
 import { fmt12 } from './slots.js'
 import { formatDate } from '../../utils/format.js'
@@ -42,6 +45,12 @@ import InitialAvatar from '../../components/common/InitialAvatar.jsx'
 const STATUS_COLOR = { SCHEDULED: 'green', COMPLETED: 'blue', CANCELLED: 'red' }
 
 const DURATION_OPTIONS = [15, 30, 45, 60].map((v) => ({ label: `${v} minutes`, value: v }))
+
+const TEST_COLUMNS = [
+  { title: 'Test', dataIndex: 'testName', key: 'testName' },
+  { title: 'Category', dataIndex: 'category', key: 'category', width: 110, render: (c) => (c === 'RADIOLOGY' ? 'Radiology' : 'Lab') },
+  { title: 'Status', dataIndex: 'status', key: 'status', width: 120, render: (s) => <Tag color={s === 'AVAILABLE' ? 'green' : 'orange'}>{s}</Tag> },
+]
 
 export default function AppointmentDetailsDrawer({ open, appointment, doctor, onClose }) {
   const { message, modal } = App.useApp()
@@ -70,6 +79,9 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
   // whether the "Record consultation" button is still on offer.
   const { data: consultation, isLoading: consultationLoading } = useConsultation(a.id, open)
   const hasConsultation = !!consultation
+
+  // Ordered tests + reports for this visit (from the shared detail endpoint), shown read-only.
+  const { data: detail } = useAppointmentDetail(a.id, open)
 
   // Reopening the drawer on another appointment must not leave the previous one's form
   // half-open with its values in it.
@@ -264,6 +276,20 @@ export default function AppointmentDetailsDrawer({ open, appointment, doctor, on
 
       {hasConsultation && (
         <ConsultationView appointmentId={a.id} enabled={open} fileLabel={patientName} />
+      )}
+
+      {!rescheduling && detail?.tests?.length > 0 && (
+        <>
+          <Divider orientation="left" orientationMargin={0}>Ordered tests</Divider>
+          <Table size="small" rowKey="id" pagination={false} columns={TEST_COLUMNS} dataSource={detail.tests} />
+        </>
+      )}
+
+      {!rescheduling && detail?.reports?.length > 0 && (
+        <>
+          <Divider orientation="left" orientationMargin={0}>Reports</Divider>
+          <ReportsViewer reports={detail.reports} fileUrl={(rid) => `/reports/${rid}/file`} height={420} />
+        </>
       )}
 
       {rescheduling && (

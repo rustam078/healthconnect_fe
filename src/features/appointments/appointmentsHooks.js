@@ -5,6 +5,7 @@ import {
   rescheduleAppointment,
   cancelAppointment,
   searchAppointments,
+  getAppointmentDetail,
 } from './appointmentsApi.js'
 
 // Admin appointment search (latest created first). page is 1-based in the UI, 0-based on the API.
@@ -13,6 +14,15 @@ export function useAppointmentSearch(filters, page, size = 20) {
     queryKey: ['appointments', 'search', filters, page, size],
     queryFn: () => searchAppointments({ ...filters, page: page - 1, size }),
     placeholderData: keepPreviousData,
+  })
+}
+
+// One appointment's ordered tests + reports (and consultation) for the detail drawer.
+export function useAppointmentDetail(appointmentId, enabled) {
+  return useQuery({
+    queryKey: ['appointments', 'detail', appointmentId],
+    queryFn: () => getAppointmentDetail(appointmentId),
+    enabled: Boolean(appointmentId) && enabled,
   })
 }
 
