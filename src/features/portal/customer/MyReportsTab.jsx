@@ -46,7 +46,7 @@ export default function MyReportsTab() {
       >
         {preview && (
           <PdfViewer
-            url={`/customer-portal/reports/${preview.id}/file`}
+            url={`/reports/${preview.id}/file`}
             fileName={preview.originalFileName || 'report.pdf'}
           />
         )}

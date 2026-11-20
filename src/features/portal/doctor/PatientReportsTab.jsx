@@ -50,7 +50,7 @@ export default function PatientReportsTab({ patientId: externalId = null, search
       <Drawer title={preview?.title || 'Report'} placement="right" width={680} open={preview != null}
         onClose={() => setPreview(null)} destroyOnHidden>
         {preview && patientId != null && (
-          <PdfViewer url={`/doctor-portal/patients/${patientId}/reports/${preview.id}/file`}
+          <PdfViewer url={`/reports/${preview.id}/file`}
             height="calc(100vh - 140px)" fileName={preview.originalFileName} />
         )}
       </Drawer>

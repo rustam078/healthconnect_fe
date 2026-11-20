@@ -70,7 +70,7 @@ export default function PatientHistoryTab({ patientId: externalId = null, search
       <Drawer title="Visit reports" placement="right" width={720} open={reportsFor != null}
         onClose={() => setReportsFor(null)} destroyOnHidden>
         <ReportsViewer reports={visitReports}
-          fileUrl={(rid) => `/doctor-portal/patients/${patientId}/reports/${rid}/file`}
+          fileUrl={(rid) => `/reports/${rid}/file`}
           height="calc(100vh - 200px)" />
       </Drawer>
     </Space>

@@ -69,7 +69,7 @@ export default function PrescriptionModal({ appointmentId, open, onClose }) {
           )}
 
           <Divider orientation="left">Reports for this visit</Divider>
-          <ReportsViewer reports={visitReports} fileUrl={(id) => `/customer-portal/reports/${id}/file`} />
+          <ReportsViewer reports={visitReports} fileUrl={(id) => `/reports/${id}/file`} />
 
           {!notFound && (
             <>

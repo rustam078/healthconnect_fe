@@ -30,7 +30,7 @@ export default function PatientHistoryPanel({ patientId }) {
   if (isLoading) return <Spin />
   if (!items?.length) return <Empty description="No visit history" />
 
-  const reportFileUrl = (id) => `/doctor-portal/patients/${patientId}/reports/${id}/file`
+  const reportFileUrl = (id) => `/reports/${id}/file`
 
   const downloadReport = async (report) => {
     try {

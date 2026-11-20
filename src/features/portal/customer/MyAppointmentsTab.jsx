@@ -87,7 +87,7 @@ export default function MyAppointmentsTab({ search = '' }) {
       <Drawer title="Visit reports" placement="right" width={720} open={reportsFor != null}
         onClose={() => setReportsFor(null)} destroyOnHidden>
         <ReportsViewer reports={visitReports}
-          fileUrl={(rid) => `/customer-portal/reports/${rid}/file`} height="calc(100vh - 200px)" />
+          fileUrl={(rid) => `/reports/${rid}/file`} height="calc(100vh - 200px)" />
       </Drawer>
     </>
   )

@@ -145,7 +145,7 @@ export default function DoctorAppointmentPage() {
     )
   }
 
-  const reportFileUrl = (id) => `/doctor-portal/patients/${ws?.patientId}/reports/${id}/file`
+  const reportFileUrl = (id) => `/reports/${id}/file`
 
   const downloadReport = async (report) => {
     try {

@@ -22,8 +22,9 @@ export function orderTests(appointmentId, labTestIds) {
   return axiosClient.post(`/doctor-portal/appointments/${appointmentId}/tests`, { labTestIds })
 }
 
+// Shared v1 endpoint (resource-guard scopes it to the visit's doctor/patient or admin).
 export function getOrderedTests(appointmentId) {
-  return axiosClient.get(`/doctor-portal/appointments/${appointmentId}/tests`)
+  return axiosClient.get(`/reports/appointments/${appointmentId}/tests`)
 }
 
 export function getAvailableSlots(date) {
@@ -47,8 +48,9 @@ export function getFullHistory(patientId) {
   return axiosClient.get(`/doctor-portal/patients/${patientId}/full-history`)
 }
 
+// Shared v1 detail endpoint (same HistoryDetailResponse); resource-guard scopes access.
 export function getHistoryDetail(appointmentId) {
-  return axiosClient.get(`/doctor-portal/history/${appointmentId}`)
+  return axiosClient.get(`/appointments/${appointmentId}/detail`)
 }
 
 // Shared appointment endpoints (ownership enforced server-side by the resource guard):
@@ -77,6 +79,7 @@ export function getDepartmentPatients() {
   return axiosClient.get('/doctor-portal/patients')
 }
 
+// Shared v1 patient details (same PatientDetailResponse); resource-guard scopes access.
 export function getPatientProfile(patientId) {
-  return axiosClient.get(`/doctor-portal/patients/${patientId}`)
+  return axiosClient.get(`/patients/${patientId}/details`)
 }

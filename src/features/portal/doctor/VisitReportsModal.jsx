@@ -17,7 +17,7 @@ export default function VisitReportsModal({ patientId, appointmentId, open, onCl
       ) : (
         <ReportsViewer
           reports={visitReports}
-          fileUrl={(id) => `/doctor-portal/patients/${patientId}/reports/${id}/file`}
+          fileUrl={(id) => `/reports/${id}/file`}
         />
       )}
     </Modal>
